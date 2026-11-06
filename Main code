@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=3b83ddaa-fd6c-4ead-9583-0df56403b08a
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Math Game!
+    </title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1e1e2e;
+      color: #ffffff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; padding: 25px; text-align: center; }
+    .screen.active { display: block; }
+
+    /* ===== COMMON ===== */
+    .game-title { font-size: 48px; color: #f9e64f; margin-bottom: 5px; }
+    .game-subtitle { font-size: 20px; color: #89dceb; margin-bottom: 20px; }
+    .section-label { font-size: 20px; color: #cba6f7; margin: 20px 0 10px 0; }
+
+    .name-input {
+      padding: 14px; font-size: 22px; border-radius: 15px; border: 3px solid #89dceb;
+      background-color: #45475a; color: #a6e3a1; width: 280px; text-align: center;
+      display: block; margin: 0 auto 10px auto;
+    }
+    .name-input::placeholder { color: #888; }
+
+    /* Buttons */
+    .btn {
+      border: none; padding: 16px 35px; font-size: 22px; border-radius: 15px;
+      cursor: pointer; font-weight: bold; margin: 8px; transition: all 0.2s; display: inline-block;
+    }
+    .btn:hover { transform: scale(1.05); }
+    .btn-green { background-color: #a6e3a1; color: #1e1e2e; }
+    .btn-green:hover { background-color: #c6f0c2; }
+    .btn-yellow { background-color: #f9e64f; color: #1e1e2e; }
+    .btn-yellow:hover { background-color: #fef08a; }
+    .btn-purple { background-color: #cba6f7; color: #1e1e2e; }
+    .btn-purple:hover { background-color: #e0c8fc; }
+    .btn-blue { background-color: #89dceb; color: #1e1e2e; }
+    .btn-blue:hover { background-color: #b0eaf5; }
+    .btn-pink { background-color: #f38ba8; color: #1e1e2e; }
+    .btn-pink:hover { background-color: #f5a3b8; }
+    .btn-small { padding: 10px 20px; font-size: 16px; border-radius: 12px; }
+
+    /* Topic grid */
+    .topic-grid {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 10px; max-width: 620px; margin: 0 auto;
+    }
+    .topic-btn {
+      padding: 12px 18px; font-size: 16px; border: 3px solid #45475a; border-radius: 15px;
+      cursor: pointer; font-weight: bold; background-color: #313244; color: #fff;
+      transition: all 0.2s; min-width: 120px;
+    }
+    .topic-btn:hover { transform: scale(1.05); border-color: #89dceb; }
+    .topic-btn.selected { border-color: #a6e3a1; background-color: #45475a; box-shadow: 0 0 15px rgba(166,227,161,0.3); }
+    .topic-emoji { font-size: 22px; display: block; margin-bottom: 3px; }
+    .topic-name { font-size: 14px; }
+
+    /* Difficulty */
+    .diff-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .diff-btn {
+      padding: 14px 28px; font-size: 18px; border: 3px solid transparent; border-radius: 15px;
+      cursor: pointer; font-weight: bold; transition: all 0.2s;
+    }
+    .diff-btn:hover { transform: scale(1.05); }
+    .diff-easy { background-color: #a6e3a1; color: #1e1e2e; }
+    .diff-medium { background-color: #f9e64f; color: #1e1e2e; }
+    .diff-hard { background-color: #f38ba8; color: #1e1e2e; }
+    .diff-btn.selected { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+
+    #startError { color: #f38ba8; font-size: 18px; margin-top: 10px; }
+
+    /* Sound toggle */
+    .sound-toggle {
+      position: fixed; top: 15px; right: 15px; z-index: 100;
+      background-color: #313244; border: 2px solid #45475a; border-radius: 50%;
+      width: 45px; height: 45px; font-size: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .sound-toggle:hover { border-color: #89dceb; }
+
+    /* ===== GAME SCREEN ===== */
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 20px; background-color: #313244; flex-wrap: wrap; gap: 6px;
+    }
+    .player-name { font-size: 18px; color: #89dceb; }
+    .score-text { font-size: 20px; color: #f9e64f; font-weight: bold; }
+    .timer-text { font-size: 18px; color: #cba6f7; font-weight: bold; }
+    .lives-text { font-size: 20px; }
+    .topic-tag {
+      font-size: 14px; color: #1e1e2e; background-color: #89dceb;
+      padding: 3px 10px; border-radius: 8px; font-weight: bold;
+    }
+
+    /* Level bar */
+    .level-bar {
+      background-color: #313244; padding: 8px 20px;
+      display: flex; align-items: center; justify-content: center; gap: 15px;
+    }
+    .level-text { font-size: 20px; color: #f9e64f; font-weight: bold; }
+    .xp-track {
+      background-color: #45475a; border-radius: 10px; height: 16px;
+      width: 200px; overflow: hidden; position: relative;
+    }
+    .xp-fill {
+      background: linear-gradient(90deg, #cba6f7, #f9e64f); height: 100%;
+      border-radius: 10px; transition: width 0.5s; width: 0%;
+    }
+    .xp-text { font-size: 14px; color: #888; }
+
+    .game-area { padding: 20px; text-align: center; max-width: 600px; margin: 0 auto; }
+    .question-number { font-size: 14px; color: #888; margin-bottom: 5px; }
+    .question {
+      font-size: 48px; color: #f9e64f; font-weight: bold; margin: 15px 0; min-height: 60px;
+    }
+    .hint-text { font-size: 16px; color: #888; margin-bottom: 12px; min-height: 22px; }
+
+    .answer-input {
+      padding: 16px; font-size: 34px; border-radius: 15px; border: 4px solid #89dceb;
+      background-color: #45475a; color: #a6e3a1; width: 170px; text-align: center; font-weight: bold;
+    }
+    .answer-input:focus { outline: none; border-color: #f9e64f; }
+
+    .numpad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      max-width: 280px; margin: 12px auto;
+    }
+    .num-btn {
+      padding: 14px; font-size: 24px; font-weight: bold; border: none; border-radius: 12px;
+      background-color: #45475a; color: #fff; cursor: pointer; transition: all 0.15s;
+    }
+    .num-btn:hover { background-color: #585b70; transform: scale(1.05); }
+    .num-btn:active { background-color: #89dceb; color: #1e1e2e; transform: scale(0.95); }
+    .num-del { background-color: #f38ba8; color: #1e1e2e; }
+    .num-del:hover { background-color: #f5a3b8; }
+
+    .feedback { font-size: 24px; font-weight: bold; margin: 12px 0; min-height: 30px; }
+
+    .streak-bar { margin: 10px auto; max-width: 300px; }
+    .streak-text { font-size: 14px; color: #cba6f7; margin-bottom: 5px; }
+    .streak-track { background-color: #45475a; border-radius: 10px; height: 10px; overflow: hidden; }
+    .streak-fill {
+      background: linear-gradient(90deg, #a6e3a1, #f9e64f); height: 100%;
+      border-radius: 10px; transition: width 0.5s; width: 0%;
+    }
+
+    /* ===== END SCREEN ===== */
+    .end-title { font-size: 34px; color: #f9e64f; margin: 15px 0 5px 0; }
+    .end-emoji { font-size: 80px; margin: 10px 0; }
+    .grade-box { font-size: 50px; font-weight: bold; margin: 10px 0; }
+
+    .stats-box {
+      background-color: #313244; border-radius: 20px; padding: 20px;
+      margin: 15px auto; max-width: 400px; text-align: left;
+    }
+    .stat-row {
+      display: flex; justify-content: space-between; padding: 8px 0;
+      font-size: 18px; border-bottom: 1px solid #45475a;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: #89dceb; }
+    .stat-value { color: #f9e64f; font-weight: bold; }
+
+    /* ===== LEADERBOARD ===== */
+    .lb-title { font-size: 36px; color: #f9e64f; margin: 15px 0; }
+    .lb-table { max-width: 550px; margin: 0 auto; width: 100%; }
+    .lb-header {
+      display: flex; padding: 10px 12px; background-color: #45475a;
+      border-radius: 10px 10px 0 0; font-weight: bold; font-size: 16px; color: #89dceb;
+    }
+    .lb-row {
+      display: flex; padding: 12px; font-size: 18px;
+      border-bottom: 1px solid #45475a; align-items: center;
+    }
+    .lb-row:nth-child(even) { background-color: #313244; }
+    .lb-rank { width: 12%; text-align: center; font-size: 22px; }
+    .lb-name { width: 25%; text-align: left; }
+    .lb-score-col { width: 18%; text-align: center; color: #f9e64f; font-weight: bold; }
+    .lb-level-col { width: 15%; text-align: center; color: #cba6f7; font-weight: bold; }
+    .lb-topic { width: 15%; text-align: center; font-size: 13px; color: #89dceb; }
+    .lb-diff { width: 15%; text-align: center; font-size: 13px; }
+    .lb-empty { padding: 30px; font-size: 20px; color: #888; }
+
+    .filter-row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter-btn {
+      padding: 6px 14px; font-size: 14px; border: 2px solid #45475a; border-radius: 10px;
+      cursor: pointer; font-weight: bold; background-color: #313244; color: #fff; transition: all 0.2s;
+    }
+    .filter-btn.active { border-color: #f9e64f; background-color: #45475a; }
+    .filter-btn:hover { border-color: #89dceb; }
+
+    /* ===== HOW TO PLAY ===== */
+    .htp-section {
+      background-color: #313244; border-radius: 15px; padding: 20px;
+      margin: 15px auto; max-width: 550px; text-align: left;
+    }
+    .htp-title { font-size: 22px; color: #f9e64f; margin-bottom: 10px; }
+    .htp-text { font-size: 18px; line-height: 1.8; color: #cdd6f4; }
+    .htp-icon { font-size: 24px; margin-right: 8px; }
+
+    /* ===== LEVEL UP OVERLAY ===== */
+    .level-up-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.8); z-index: 200;
+      justify-content: center; align-items: center; flex-direction: column;
+    }
+    .level-up-overlay.show { display: flex; }
+    .level-up-text {
+      font-size: 60px; color: #f9e64f; font-weight: bold;
+      animation: levelPop 0.6s ease;
+    }
+    .level-up-sub { font-size: 24px; color: #89dceb; margin-top: 10px; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+    @keyframes levelPop { 0%{transform:scale(0.3);opacity:0} 60%{transform:scale(1.2);opacity:1} 100%{transform:scale(1)} }
+    @keyframes float-up { 0%{opacity:1;transform:translateY(0) translateX(-50%)} 100%{opacity:0;transform:translateY(-80px) translateX(-50%)} }
+    .pop { animation: pop 0.4s ease; }
+    .shake { animation: shake 0.4s ease; }
+    .bonus-float {
+      position: fixed; font-size: 26px; font-weight: bold; color: #f9e64f;
+      pointer-events: none; animation: float-up 1s ease forwards;
+    }
+
+    @media (max-width: 500px) {
+      .game-title { font-size: 34px; }
+      .question { font-size: 36px; }
+      .answer-input { font-size: 26px; width: 140px; }
+    }
+
+    /* ===== AUTH ===== */
+    .auth-box {
+      background-color: #313244; border-radius: 20px; padding: 25px;
+      margin: 15px auto; max-width: 380px;
+    }
+    .auth-input {
+      padding: 14px; font-size: 18px; border-radius: 12px; border: 3px solid #45475a;
+      background-color: #1e1e2e; color: #a6e3a1; width: 100%; text-align: center;
+      margin-bottom: 10px; display: block;
+    }
+    .auth-input:focus { outline: none; border-color: #89dceb; }
+    .auth-error { color: #f38ba8; font-size: 16px; margin-top: 8px; min-height: 22px; }
+    .user-chip {
+      background-color: #313244; border-radius: 15px; padding: 10px 20px;
+      display: inline-flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .user-chip-name { color: #a6e3a1; font-weight: bold; font-size: 18px; }
+
+    /* ===== FRIENDS / CHALLENGES ===== */
+    .card-list { max-width: 550px; margin: 0 auto; }
+    .f-card {
+      background-color: #313244; border-radius: 15px; padding: 12px 15px;
+      margin-bottom: 8px; display: flex; justify-content: space-between;
+      align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .f-name { font-size: 18px; color: #89dceb; font-weight: bold; }
+    .f-sub { font-size: 13px; color: #888; }
+    .f-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge {
+      background-color: #f9e64f; color: #1e1e2e; font-weight: bold;
+      border-radius: 999px; padding: 2px 9px; font-size: 13px; margin-left: 6px;
+    }
+    .badge-red { background-color: #f38ba8; }
+    .tab-row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 15px 0; }
+    .tab-btn {
+      padding: 8px 16px; font-size: 15px; border: 2px solid #45475a; border-radius: 10px;
+      cursor: pointer; font-weight: bold; background-color: #313244; color: #fff;
+    }
+    .tab-btn.active { border-color: #f9e64f; background-color: #45475a; }
+    .empty-state { color: #888; padding: 25px; font-size: 17px; text-align: center; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.75); z-index: 250;
+      justify-content: center; align-items: center; padding: 20px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background-color: #313244; border-radius: 20px; padding: 25px;
+      max-width: 420px; width: 100%; text-align: center;
+    }
+    .modal-title { font-size: 24px; color: #f9e64f; margin-bottom: 15px; }
+    .mode-row { display: flex; gap: 8px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+    .mode-btn {
+      padding: 10px 18px; font-size: 15px; border: 3px solid #45475a; border-radius: 12px;
+      cursor: pointer; font-weight: bold; background-color: #1e1e2e; color: #fff;
+    }
+    .mode-btn.selected { border-color: #a6e3a1; background-color: #45475a; }
+
+    /* ===== LIVE MATCH ===== */
+    .vs-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px; background-color: #313244; gap: 10px;
+    }
+    .vs-player { flex: 1; text-align: center; }
+    .vs-name { font-size: 16px; color: #89dceb; font-weight: bold; }
+    .vs-name.me { color: #a6e3a1; }
+    .vs-score { font-size: 30px; color: #f9e64f; font-weight: bold; }
+    .vs-middle { font-size: 22px; color: #cba6f7; font-weight: bold; }
+    .waiting-text {
+      font-size: 20px; color: #cba6f7; margin: 20px 0; min-height: 30px;
+    }
+    .inbox-count {
+      background-color: #f38ba8; color: #1e1e2e; border-radius: 999px;
+      padding: 1px 8px; font-size: 13px; font-weight: bold; margin-left: 6px;
+    }
+    </style>
+  </head>
+  <body>
+    <!-- SOUND TOGGLE -->
+    <div class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="Toggle Sound">
+      🔈
+    </div>
+    <!-- LEVEL UP OVERLAY -->
+    <div class="level-up-overlay" id="levelUpOverlay">
+      <div class="level-up-text" id="levelUpText">
+        LEVEL UP!
+      </div>
+      <div class="level-up-sub" id="levelUpSub">
+        Level 2
+      </div>
+    </div>
+    <!-- ===== AUTH SCREEN ===== -->
+    <div class="screen active" id="authScreen">
+      <div class="game-title">
+        🧮 Math Game!
+      </div>
+      <div class="game-subtitle">
+        Log in or sign up to play!
+      </div>
+      <div class="auth-box">
+        <input type="text" class="auth-input" id="authUsername" placeholder="Username" maxlength="15" autocomplete="username" />
+        <input type="password" class="auth-input" id="authPassword" placeholder="Password (4+ chars)" maxlength="30" autocomplete="current-password" />
+        <button class="btn btn-green" style="width:100%;" onclick="doLogin()">
+          Log In 🔑
+        </button>
+        <button class="btn btn-yellow" style="width:100%;" onclick="doSignup()">
+          Sign Up ✨
+        </button>
+        <div class="auth-error" id="authError">
+        </div>
+      </div>
+    </div>
+    <!-- ===== START SCREEN ===== -->
+    <div class="screen" id="startScreen">
+      <div class="game-title">
+        🧮 Math Game!
+      </div>
+      <div class="game-subtitle">
+        Pick a topic and test your skills!
+      </div>
+      <div class="user-chip">
+        <span class="user-chip-name" id="loggedInName">        player
+</span>
+        <button class="btn btn-small btn-pink" onclick="doLogout()">
+          Log Out
+        </button>
+      </div>
+      <div style="margin:10px 0;">
+        <button class="btn btn-blue btn-small" onclick="showFriends()">
+          👥 Friends
+        </button>
+        <button class="btn btn-purple btn-small" onclick="showChallenges()">
+          ⚔ Challenges
+          <span id="inboxBadge" class="inbox-count" style="display:none;">          0
+</span>
+        </button>
+      </div>
+      <div class="section-label">
+        Pick a topic:
+      </div>
+      <div class="topic-grid" id="topicGrid">
+        <button class="topic-btn" onclick="pickTopic(&#39;addition&#39;,this)">
+          <span class="topic-emoji">          ➕
+</span>
+          <span class="topic-name">          Addition
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;subtraction&#39;,this)">
+          <span class="topic-emoji">          ➖
+</span>
+          <span class="topic-name">          Subtraction
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;multiplication&#39;,this)">
+          <span class="topic-emoji">          ✖
+</span>
+          <span class="topic-name">          Multiplication
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;division&#39;,this)">
+          <span class="topic-emoji">          ➗
+</span>
+          <span class="topic-name">          Division
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;mixed&#39;,this)">
+          <span class="topic-emoji">          🎲
+</span>
+          <span class="topic-name">          Mixed
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;decimals&#39;,this)">
+          <span class="topic-emoji">          🔳
+</span>
+          <span class="topic-name">          Decimals
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;algebra&#39;,this)">
+          <span class="topic-emoji">          🔬
+</span>
+          <span class="topic-name">          Algebra
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;fractions&#39;,this)">
+          <span class="topic-emoji">          🍰
+</span>
+          <span class="topic-name">          Fractions
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;squares&#39;,this)">
+          <span class="topic-emoji">          ²
+</span>
+          <span class="topic-name">          Squares
+</span>
+        </button>
+        <button class="topic-btn" onclick="pickTopic(&#39;percentage&#39;,this)">
+          <span class="topic-emoji">          %
+</span>
+          <span class="topic-name">          Percentage
+</span>
+        </button>
+      </div>
+      <div class="section-label">
+        Pick difficulty:
+      </div>
+      <div class="diff-row">
+        <button class="diff-btn diff-easy" onclick="pickDifficulty(&#39;easy&#39;,this)">
+          💚 Easy
+        </button>
+        <button class="diff-btn diff-medium" onclick="pickDifficulty(&#39;medium&#39;,this)">
+          💛 Medium
+        </button>
+        <button class="diff-btn diff-hard" onclick="pickDifficulty(&#39;hard&#39;,this)">
+          ❤ Hard
+        </button>
+      </div>
+      <br />
+      <button class="btn btn-green" style="font-size:26px; padding:18px 50px;" onclick="startGame()">
+        Start Game! 🚀
+      </button>
+      <br />
+      <button class="btn btn-purple" onclick="showLeaderboard()">
+        🏆 Leaderboard
+      </button>
+      <button class="btn btn-blue" onclick="showHowToPlay()">
+        ❓ How to Play
+      </button>
+      <p id="syncStatus" style="font-size:14px;margin-top:12px;color:#888;">
+        ☁ Connecting...
+      </p>
+      <p id="startError">
+      </p>
+    </div>
+    <!-- ===== HOW TO PLAY SCREEN ===== -->
+    <div class="screen" id="howToPlayScreen">
+      <div class="game-title">
+        ❓ How to Play
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          🎮
+</span>
+          The Goal
+        </div>
+        <div class="htp-text">
+          Answer as many math questions as you can before the timer runs out or you lose all your lives!
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          ⏱
+</span>
+          Timer
+        </div>
+        <div class="htp-text">
+          You have
+          <b style="color:#f9e64f;">          60 seconds
+</b>
+          to answer as many questions as possible. Be quick!
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          ❤
+</span>
+          Lives
+        </div>
+        <div class="htp-text">
+          You start with
+          <b style="color:#f38ba8;">          3 lives
+</b>
+          (hearts). Each wrong answer loses 1 life. If you lose all 3, the game ends!
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          ⭐
+</span>
+          Points &amp; Scoring
+        </div>
+        <div class="htp-text">
+          ✅ Correct answer =
+          <b style="color:#a6e3a1;">          +10 points
+</b>
+          <br />
+          🔥 3 in a row =
+          <b style="color:#f9e64f;">          +20 points
+</b>
+          (Streak bonus!)
+          <br />
+          💥 5 in a row =
+          <b style="color:#f9e64f;">          +30 points
+</b>
+          (Super streak!)
+          <br />
+          ⏱ 10 in a row =
+          <b style="color:#89dceb;">          +5 seconds
+</b>
+          (Time boost!)
+          <br />
+          ⏩ Skip = 0 points (but no life lost)
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          📈
+</span>
+          Levels
+        </div>
+        <div class="htp-text">
+          You start at
+          <b style="color:#cba6f7;">          Level 1
+</b>
+          . Earn XP by answering correctly!
+          <br />
+          Every time the XP bar fills up, you
+          <b style="color:#f9e64f;">          LEVEL UP!
+</b>
+          <br />
+          Higher levels = bigger numbers = more challenge!
+          <br />
+          <br />
+          <b>          XP needed per level:
+</b>
+          <br />
+          Level 1 ➔ 2:
+          <b>          50 XP
+</b>
+          <br />
+          Level 2 ➔ 3:
+          <b>          80 XP
+</b>
+          <br />
+          Level 3 ➔ 4:
+          <b>          120 XP
+</b>
+          <br />
+          Level 4 ➔ 5:
+          <b>          170 XP
+</b>
+          <br />
+          And it keeps going!
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          📚
+</span>
+          Topics
+        </div>
+        <div class="htp-text">
+          <b>          ➕ Addition
+</b>
+          — add numbers together
+          <br />
+          <b>          ➖ Subtraction
+</b>
+          — subtract numbers
+          <br />
+          <b>          ✖ Multiplication
+</b>
+          — times tables
+          <br />
+          <b>          ➗ Division
+</b>
+          — divide numbers
+          <br />
+          <b>          🎲 Mixed
+</b>
+          — all of the above!
+          <br />
+          <b>          🔳 Decimals
+</b>
+          — math with decimal numbers (like 3.5)
+          <br />
+          <b>          🔬 Algebra
+</b>
+          — solve for x (like x + 3 = 10)
+          <br />
+          <b>          🍰 Fractions
+</b>
+          — add and simplify fractions
+          <br />
+          <b>          ² Squares
+</b>
+          — squares and square roots
+          <br />
+          <b>          % Percentage
+</b>
+          — find percentages
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          🏆
+</span>
+          Leaderboard
+        </div>
+        <div class="htp-text">
+          Your scores are saved automatically! Check the leaderboard to see your best scores and compete with friends!
+        </div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-title">
+          <span class="htp-icon">          🔈
+</span>
+          Sound
+        </div>
+        <div class="htp-text">
+          Click the speaker icon in the top-right corner to turn sounds on or off.
+        </div>
+      </div>
+      <br />
+      <button class="btn btn-blue" onclick="goToStart()">
+        ⬅ Back to Menu
+      </button>
+    </div>
+    <!-- ===== GAME SCREEN ===== -->
+    <div class="screen" id="gameScreen">
+      <div class="top-bar">
+        <div class="player-name" id="displayName">
+          🎮 Player
+        </div>
+        <div class="topic-tag" id="topicTag">
+          Mixed
+        </div>
+        <div class="lives-text" id="livesDisplay">
+          ❤❤❤
+        </div>
+        <div class="score-text" id="scoreDisplay">
+          Score: 0
+        </div>
+        <div class="timer-text" id="timerDisplay">
+          ⏱ 60s
+        </div>
+      </div>
+      <!-- Level bar -->
+      <div class="level-bar">
+        <div class="level-text" id="levelDisplay">
+          ⭐ Lv. 1
+        </div>
+        <div class="xp-track">
+          <div class="xp-fill" id="xpFill">
+          </div>
+        </div>
+        <div class="xp-text" id="xpText">
+          0 / 50 XP
+        </div>
+      </div>
+      <div class="game-area">
+        <div class="question-number" id="questionNum">
+          Question 1
+        </div>
+        <div class="question" id="questionDisplay">
+          ? + ? = ?
+        </div>
+        <div class="hint-text" id="hintText">
+        </div>
+        <input type="text" class="answer-input" id="answerInput" placeholder="?" readonly="" />
+        <div>
+          <button class="btn btn-green" onclick="checkAnswer()">
+            Check! ✔
+          </button>
+          <button class="btn btn-blue btn-small" onclick="skipQuestion()">
+            Skip ⏩
+          </button>
+        </div>
+        <div class="numpad">
+          <button class="num-btn" onclick="tapNum(&#39;1&#39;)">
+            1
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;2&#39;)">
+            2
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;3&#39;)">
+            3
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;4&#39;)">
+            4
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;5&#39;)">
+            5
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;6&#39;)">
+            6
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;7&#39;)">
+            7
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;8&#39;)">
+            8
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;9&#39;)">
+            9
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;.&#39;)">
+            .
+          </button>
+          <button class="num-btn" onclick="tapNum(&#39;0&#39;)">
+            0
+          </button>
+          <button class="num-btn num-del" onclick="tapDel()">
+            ⌫
+          </button>
+        </div>
+        <div class="feedback" id="feedback">
+        </div>
+        <div class="streak-bar">
+          <div class="streak-text" id="streakText">
+            🔥 Streak: 0
+          </div>
+          <div class="streak-track">
+            <div class="streak-fill" id="streakFill">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== END SCREEN ===== -->
+    <div class="screen" id="endScreen">
+      <div class="end-emoji" id="endEmoji">
+        🎉
+      </div>
+      <div class="end-title" id="endTitle">
+        Game Over!
+      </div>
+      <div class="grade-box" id="gradeBox">
+      </div>
+      <div class="stats-box" id="statsBox">
+      </div>
+      <button class="btn btn-green" onclick="goToStart()">
+        Play Again! 🔄
+      </button>
+      <button class="btn btn-purple" onclick="showLeaderboard()">
+        🏆 Leaderboard
+      </button>
+    </div>
+    <!-- ===== LEADERBOARD SCREEN ===== -->
+    <div class="screen" id="leaderboardScreen">
+      <div class="lb-title">
+        🏆 Leaderboard
+      </div>
+      <div class="filter-row" id="filterRow">
+        <button class="filter-btn active" onclick="filterLB(&#39;all&#39;,this)">
+          All
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;addition&#39;,this)">
+          ➕
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;subtraction&#39;,this)">
+          ➖
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;multiplication&#39;,this)">
+          ✖
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;division&#39;,this)">
+          ➗
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;mixed&#39;,this)">
+          🎲
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;decimals&#39;,this)">
+          🔳
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;algebra&#39;,this)">
+          🔬
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;fractions&#39;,this)">
+          🍰
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;squares&#39;,this)">
+          ²
+        </button>
+        <button class="filter-btn" onclick="filterLB(&#39;percentage&#39;,this)">
+          %
+        </button>
+      </div>
+      <div class="lb-table">
+        <div class="lb-header">
+          <div class="lb-rank">
+            #
+          </div>
+          <div class="lb-name">
+            Name
+          </div>
+          <div class="lb-score-col">
+            Score
+          </div>
+          <div class="lb-level-col">
+            Level
+          </div>
+          <div class="lb-topic">
+            Topic
+          </div>
+          <div class="lb-diff">
+            Diff
+          </div>
+        </div>
+        <div id="lbBody">
+        </div>
+      </div>
+      <br />
+      <button class="btn btn-blue" onclick="goToStart()">
+        ⬅ Back
+      </button>
+      <button class="btn btn-pink btn-small" onclick="clearAllScores()">
+        🗑 Clear All Scores
+      </button>
+    </div>
+    <!-- ===== FRIENDS SCREEN ===== -->
+    <div class="screen" id="friendsScreen">
+      <div class="game-title">
+        👥 Friends
+      </div>
+      <div class="auth-box" style="max-width:420px;">
+        <input type="text" class="auth-input" id="addFriendInput" placeholder="Friend&#39;s username..." maxlength="15" />
+        <button class="btn btn-green" style="width:100%;" onclick="sendFriendRequest()">
+          Send Friend Request ➕
+        </button>
+        <div class="auth-error" id="friendError">
+        </div>
+      </div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchFriendsTab(&#39;friends&#39;,this)">
+          My Friends
+        </button>
+        <button class="tab-btn" onclick="switchFriendsTab(&#39;requests&#39;,this)">
+          Requests
+          <span id="reqBadge" class="inbox-count" style="display:none;">          0
+</span>
+        </button>
+      </div>
+      <div class="card-list" id="friendsList">
+      </div>
+      <br />
+      <button class="btn btn-blue" onclick="goToStart()">
+        ⬅ Back
+      </button>
+    </div>
+    <!-- ===== CHALLENGES SCREEN ===== -->
+    <div class="screen" id="challengesScreen">
+      <div class="game-title">
+        ⚔ Challenges
+      </div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchChallengesTab(&#39;incoming&#39;,this)">
+          Incoming
+          <span id="incBadge" class="inbox-count" style="display:none;">          0
+</span>
+        </button>
+        <button class="tab-btn" onclick="switchChallengesTab(&#39;outgoing&#39;,this)">
+          Sent
+        </button>
+        <button class="tab-btn" onclick="switchChallengesTab(&#39;results&#39;,this)">
+          Results
+        </button>
+      </div>
+      <div class="card-list" id="challengesList">
+      </div>
+      <br />
+      <button class="btn btn-blue" onclick="goToStart()">
+        ⬅ Back
+      </button>
+    </div>
+    <!-- ===== CHALLENGE MODAL ===== -->
+    <div class="modal-overlay" id="challengeModal">
+      <div class="modal-box">
+        <div class="modal-title" id="challengeModalTitle">
+          Challenge friend
+        </div>
+        <div class="section-label" style="font-size:16px;margin:10px 0;">
+          Topic:
+        </div>
+        <div class="topic-grid" id="chTopicGrid" style="max-width:400px;">
+        </div>
+        <div class="section-label" style="font-size:16px;margin:10px 0;">
+          Difficulty:
+        </div>
+        <div class="diff-row">
+          <button class="diff-btn diff-easy" onclick="pickChDiff(&#39;easy&#39;,this)">
+            💚 Easy
+          </button>
+          <button class="diff-btn diff-medium" onclick="pickChDiff(&#39;medium&#39;,this)">
+            💛 Med
+          </button>
+          <button class="diff-btn diff-hard" onclick="pickChDiff(&#39;hard&#39;,this)">
+            ❤ Hard
+          </button>
+        </div>
+        <div class="section-label" style="font-size:16px;margin:10px 0;">
+          Mode:
+        </div>
+        <div class="mode-row">
+          <button class="mode-btn selected" onclick="pickChMode(&#39;async&#39;,this)">
+            🕐 Play Anytime
+          </button>
+          <button class="mode-btn" onclick="pickChMode(&#39;live&#39;,this)">
+            ⚡ Live Race
+          </button>
+        </div>
+        <div class="auth-error" id="chModalError">
+        </div>
+        <br />
+        <button class="btn btn-green" onclick="sendChallenge()">
+          Send 🚀
+        </button>
+        <button class="btn btn-pink" onclick="closeChallengeModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+    <!-- ===== LIVE MATCH LOBBY ===== -->
+    <div class="screen" id="liveLobbyScreen">
+      <div class="game-title">
+        ⚡ Live Race
+      </div>
+      <div class="waiting-text" id="lobbyStatus">
+        Waiting for opponent...
+      </div>
+      <div class="stats-box" id="lobbyInfo" style="max-width:380px;">
+      </div>
+      <br />
+      <button class="btn btn-pink" onclick="cancelLiveMatch()">
+        Cancel
+      </button>
+    </div>
+    <!-- ===== LIVE MATCH SCREEN ===== -->
+    <div class="screen" id="liveMatchScreen">
+      <div class="vs-bar">
+        <div class="vs-player">
+          <div class="vs-name me" id="liveMeName">
+            You
+          </div>
+          <div class="vs-score" id="liveMeScore">
+            0
+          </div>
+        </div>
+        <div class="vs-middle" id="liveRound">
+          1 / 10
+        </div>
+        <div class="vs-player">
+          <div class="vs-name" id="liveOppName">
+            Opponent
+          </div>
+          <div class="vs-score" id="liveOppScore">
+            0
+          </div>
+        </div>
+      </div>
+      <div class="game-area">
+        <div class="question" id="liveQuestion">
+          ? + ? = ?
+        </div>
+        <div class="hint-text" id="liveHint">
+        </div>
+        <input type="text" class="answer-input" id="liveAnswerInput" placeholder="?" readonly="" />
+        <div>
+          <button class="btn btn-green" onclick="checkLiveAnswer()">
+            Check! ✔
+          </button>
+        </div>
+        <div class="numpad">
+          <button class="num-btn" onclick="liveTapNum(&#39;1&#39;)">
+            1
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;2&#39;)">
+            2
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;3&#39;)">
+            3
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;4&#39;)">
+            4
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;5&#39;)">
+            5
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;6&#39;)">
+            6
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;7&#39;)">
+            7
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;8&#39;)">
+            8
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;9&#39;)">
+            9
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;.&#39;)">
+            .
+          </button>
+          <button class="num-btn" onclick="liveTapNum(&#39;0&#39;)">
+            0
+          </button>
+          <button class="num-btn num-del" onclick="liveTapDel()">
+            ⌫
+          </button>
+        </div>
+        <div class="feedback" id="liveFeedback">
+        </div>
+      </div>
+    </div>
+    <script>
+      // =====================
+    // FIREBASE RTDB HELPERS
+    // =====================
+    var FB_URL = &#34;https://craft-combat-default-rtdb.firebaseio.com&#34;;
+    var FB_ROOT = &#34;/mathgame&#34;;
+
+    function fbGet(path) {
+      return fetch(FB_URL + FB_ROOT + path + &#34;.json&#34;).then(function(r){ return r.json(); });
+    }
+    function fbPut(path, data) {
+      return fetch(FB_URL + FB_ROOT + path + &#34;.json&#34;, {
+        method: &#34;PUT&#34;, headers: {&#34;Content-Type&#34;:&#34;application/json&#34;},
+        body: JSON.stringify(data)
+      }).then(function(r){ return r.json(); });
+    }
+    function fbPatch(path, data) {
+      return fetch(FB_URL + FB_ROOT + path + &#34;.json&#34;, {
+        method: &#34;PATCH&#34;, headers: {&#34;Content-Type&#34;:&#34;application/json&#34;},
+        body: JSON.stringify(data)
+      }).then(function(r){ return r.json(); });
+    }
+    function fbDelete(path) {
+      return fetch(FB_URL + FB_ROOT + path + &#34;.json&#34;, { method: &#34;DELETE&#34; });
+    }
+    function fbPost(path, data) {
+      return fetch(FB_URL + FB_ROOT + path + &#34;.json&#34;, {
+        method: &#34;POST&#34;, headers: {&#34;Content-Type&#34;:&#34;application/json&#34;},
+        body: JSON.stringify(data)
+      }).then(function(r){ return r.json(); });
+    }
+
+    // =====================
+    // AUTH / SESSION
+    // =====================
+    var currentUser = null; // username string
+    var currentPassHash = null;
+
+    async function sha256(str) {
+      var buf = new TextEncoder().encode(str);
+      var hash = await crypto.subtle.digest(&#34;SHA-256&#34;, buf);
+      var bytes = new Uint8Array(hash);
+      var out = &#34;&#34;;
+      for (var i = 0; i &lt; bytes.length; i++) out += bytes[i].toString(16).padStart(2, &#34;0&#34;);
+      return out;
+    }
+
+    function validUsername(u) { return /^[a-zA-Z0-9_]{3,15}$/.test(u); }
+
+    async function doSignup() {
+      var u = document.getElementById(&#34;authUsername&#34;).value.trim().toLowerCase();
+      var p = document.getElementById(&#34;authPassword&#34;).value;
+      var err = document.getElementById(&#34;authError&#34;);
+      err.textContent = &#34;&#34;;
+      if (!validUsername(u)) { err.textContent = &#34;Username: 3-15 chars, letters/numbers/_ only.&#34;; return; }
+      if (p.length &lt; 4) { err.textContent = &#34;Password must be at least 4 characters.&#34;; return; }
+
+      var existing = await fbGet(&#34;/users/&#34; + u);
+      if (existing) { err.textContent = &#34;Username already taken!&#34;; return; }
+
+      var hash = await sha256(p);
+      await fbPut(&#34;/users/&#34; + u, { passHash: hash, createdAt: Date.now() });
+      localStorage.setItem(&#34;mathGameSession&#34;, JSON.stringify({ u: u, h: hash }));
+      currentUser = u; currentPassHash = hash;
+      enterApp();
+    }
+
+    async function doLogin() {
+      var u = document.getElementById(&#34;authUsername&#34;).value.trim().toLowerCase();
+      var p = document.getElementById(&#34;authPassword&#34;).value;
+      var err = document.getElementById(&#34;authError&#34;);
+      err.textContent = &#34;&#34;;
+      if (!u || !p) { err.textContent = &#34;Enter username and password.&#34;; return; }
+
+      var rec = await fbGet(&#34;/users/&#34; + u);
+      if (!rec) { err.textContent = &#34;No account with that username.&#34;; return; }
+      var hash = await sha256(p);
+      if (rec.passHash !== hash) { err.textContent = &#34;Wrong password.&#34;; return; }
+
+      localStorage.setItem(&#34;mathGameSession&#34;, JSON.stringify({ u: u, h: hash }));
+      currentUser = u; currentPassHash = hash;
+      enterApp();
+    }
+
+    function doLogout() {
+      stopInboxPoll();
+      localStorage.removeItem(&#34;mathGameSession&#34;);
+      currentUser = null; currentPassHash = null;
+      document.getElementById(&#34;authUsername&#34;).value = &#34;&#34;;
+      document.getElementById(&#34;authPassword&#34;).value = &#34;&#34;;
+      showScreen(&#34;authScreen&#34;);
+    }
+
+    async function tryRestoreSession() {
+      var raw = localStorage.getItem(&#34;mathGameSession&#34;);
+      if (!raw) return false;
+      try {
+        var s = JSON.parse(raw);
+        var rec = await fbGet(&#34;/users/&#34; + s.u);
+        if (rec &amp;&amp; rec.passHash === s.h) {
+          currentUser = s.u; currentPassHash = s.h;
+          return true;
+        }
+      } catch (e) {}
+      localStorage.removeItem(&#34;mathGameSession&#34;);
+      return false;
+    }
+
+    function enterApp() {
+      document.getElementById(&#34;loggedInName&#34;).textContent = currentUser;
+      showScreen(&#34;startScreen&#34;);
+      refreshInbox();
+      startInboxPoll();
+    }
+
+    // =====================
+    // SOUND SYSTEM
+    // =====================
+    var soundOn = true;
+    var audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, duration, type, volume) {
+      if (!soundOn) return;
+      try {
+        var ctx = getAudioCtx();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = type || &#34;sine&#34;;
+        osc.frequency.value = freq;
+        gain.gain.value = volume || 0.3;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function soundCorrect() {
+      playTone(523, 0.1, &#34;sine&#34;, 0.3);
+      setTimeout(function() { playTone(659, 0.1, &#34;sine&#34;, 0.3); }, 100);
+      setTimeout(function() { playTone(784, 0.15, &#34;sine&#34;, 0.3); }, 200);
+    }
+
+    function soundWrong() {
+      playTone(200, 0.15, &#34;square&#34;, 0.2);
+      setTimeout(function() { playTone(150, 0.3, &#34;square&#34;, 0.2); }, 150);
+    }
+
+    function soundClick() {
+      playTone(800, 0.05, &#34;sine&#34;, 0.15);
+    }
+
+    function soundSkip() {
+      playTone(400, 0.1, &#34;triangle&#34;, 0.2);
+      setTimeout(function() { playTone(300, 0.1, &#34;triangle&#34;, 0.2); }, 100);
+    }
+
+    function soundLevelUp() {
+      playTone(523, 0.12, &#34;sine&#34;, 0.3);
+      setTimeout(function() { playTone(659, 0.12, &#34;sine&#34;, 0.3); }, 120);
+      setTimeout(function() { playTone(784, 0.12, &#34;sine&#34;, 0.3); }, 240);
+      setTimeout(function() { playTone(1047, 0.3, &#34;sine&#34;, 0.35); }, 360);
+    }
+
+    function soundGameOver() {
+      playTone(400, 0.2, &#34;sine&#34;, 0.3);
+      setTimeout(function() { playTone(350, 0.2, &#34;sine&#34;, 0.3); }, 200);
+      setTimeout(function() { playTone(300, 0.2, &#34;sine&#34;, 0.3); }, 400);
+      setTimeout(function() { playTone(200, 0.5, &#34;sine&#34;, 0.25); }, 600);
+    }
+
+    function soundStreak() {
+      playTone(600, 0.08, &#34;sine&#34;, 0.25);
+      setTimeout(function() { playTone(800, 0.08, &#34;sine&#34;, 0.25); }, 80);
+      setTimeout(function() { playTone(1000, 0.15, &#34;sine&#34;, 0.3); }, 160);
+    }
+
+    function soundTick() {
+      playTone(1000, 0.03, &#34;sine&#34;, 0.1);
+    }
+
+    function soundStart() {
+      playTone(400, 0.1, &#34;sine&#34;, 0.25);
+      setTimeout(function() { playTone(500, 0.1, &#34;sine&#34;, 0.25); }, 100);
+      setTimeout(function() { playTone(600, 0.1, &#34;sine&#34;, 0.25); }, 200);
+      setTimeout(function() { playTone(800, 0.2, &#34;sine&#34;, 0.3); }, 300);
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      document.getElementById(&#34;soundToggle&#34;).textContent = soundOn ? &#34;\u{1F50A}&#34; : &#34;\u{1F507}&#34;;
+      if (soundOn) soundClick();
+    }
+
+    // =====================
+    // GAME VARIABLES
+    // =====================
+    var playerName = &#34;&#34;;
+    var difficulty = &#34;&#34;;
+    var topic = &#34;&#34;;
+    var score = 0;
+    var lives = 3;
+    var currentAnswer = 0;
+    var currentAnswerStr = &#34;&#34;;
+    var questionCount = 0;
+    var correctCount = 0;
+    var wrongCount = 0;
+    var skippedCount = 0;
+    var streak = 0;
+    var bestStreak = 0;
+    var timeLeft = 60;
+    var timer = null;
+    var lbFilter = &#34;all&#34;;
+
+    // LEVEL SYSTEM
+    var level = 1;
+    var xp = 0;
+    var xpForNext = 50;
+
+    // ANTI-SPAM
+    var waiting = false;
+
+    function getXpNeeded(lvl) {
+      // 50, 80, 120, 170, 230, 300...
+      return 50 + (lvl - 1) * 30 + Math.floor((lvl - 1) * (lvl - 1) * 5);
+    }
+
+    // =====================
+    // TOPIC &amp; DIFFICULTY
+    // =====================
+    function pickTopic(t, btn) {
+      topic = t;
+      soundClick();
+      var buttons = document.querySelectorAll(&#34;.topic-btn&#34;);
+      for (var i = 0; i &lt; buttons.length; i++) buttons[i].classList.remove(&#34;selected&#34;);
+      btn.classList.add(&#34;selected&#34;);
+    }
+
+    function pickDifficulty(lvl, btn) {
+      difficulty = lvl;
+      soundClick();
+      var buttons = document.querySelectorAll(&#34;.diff-btn&#34;);
+      for (var i = 0; i &lt; buttons.length; i++) buttons[i].classList.remove(&#34;selected&#34;);
+      btn.classList.add(&#34;selected&#34;);
+    }
+
+    // =====================
+    // SCREENS
+    // =====================
+    function showScreen(id) {
+      var screens = [&#34;authScreen&#34;,&#34;startScreen&#34;,&#34;gameScreen&#34;,&#34;endScreen&#34;,&#34;leaderboardScreen&#34;,&#34;howToPlayScreen&#34;,&#34;friendsScreen&#34;,&#34;challengesScreen&#34;,&#34;liveLobbyScreen&#34;,&#34;liveMatchScreen&#34;];
+      for (var i = 0; i &lt; screens.length; i++) document.getElementById(screens[i]).classList.remove(&#34;active&#34;);
+      document.getElementById(id).classList.add(&#34;active&#34;);
+    }
+
+    function showHowToPlay() {
+      soundClick();
+      showScreen(&#34;howToPlayScreen&#34;);
+    }
+
+    // =====================
+    // START GAME
+    // =====================
+    function startGame() {
+      if (!currentUser) { showScreen(&#34;authScreen&#34;); return; }
+      playerName = currentUser;
+      if (!topic) { document.getElementById(&#34;startError&#34;).textContent = &#34;Pick a topic first!&#34;; return; }
+      if (!difficulty) { document.getElementById(&#34;startError&#34;).textContent = &#34;Pick a difficulty first!&#34;; return; }
+      document.getElementById(&#34;startError&#34;).textContent = &#34;&#34;;
+
+      score = 0; lives = 3; questionCount = 0; correctCount = 0; wrongCount = 0;
+      skippedCount = 0; streak = 0; bestStreak = 0; timeLeft = 60;
+      level = 1; xp = 0; xpForNext = getXpNeeded(1);
+
+      var topicNames = {
+        addition:&#34;Addition&#34;, subtraction:&#34;Subtraction&#34;, multiplication:&#34;Multiplication&#34;,
+        division:&#34;Division&#34;, mixed:&#34;Mixed&#34;, decimals:&#34;Decimals&#34;,
+        algebra:&#34;Algebra&#34;, fractions:&#34;Fractions&#34;, squares:&#34;Squares&#34;, percentage:&#34;Percentage&#34;
+      };
+
+      document.getElementById(&#34;displayName&#34;).innerHTML = &#34;&amp;#127918; &#34; + playerName;
+      document.getElementById(&#34;topicTag&#34;).textContent = topicNames[topic] || topic;
+      document.getElementById(&#34;timerDisplay&#34;).style.color = &#34;#cba6f7&#34;;
+      updateScore(); updateLives(); updateStreak(); updateLevel();
+      showScreen(&#34;gameScreen&#34;);
+      soundStart();
+      newQuestion();
+      startTimer();
+    }
+
+    // =====================
+    // TIMER
+    // =====================
+    function startTimer() {
+      clearInterval(timer);
+      timer = setInterval(function () {
+        timeLeft--;
+        document.getElementById(&#34;timerDisplay&#34;).innerHTML = &#34;&amp;#9201; &#34; + timeLeft + &#34;s&#34;;
+        if (timeLeft &lt;= 10) {
+          document.getElementById(&#34;timerDisplay&#34;).style.color = &#34;#f38ba8&#34;;
+          soundTick();
+        }
+        if (timeLeft &lt;= 0) endGame();
+      }, 1000);
+    }
+
+    // =====================
+    // HELPERS
+    // =====================
+    function randomNumber(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function randomDecimal(min, max, places) { return parseFloat((Math.random() * (max - min) + min).toFixed(places)); }
+    function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = b; b = a % b; a = t; } return a; }
+
+    // =====================
+    // LEVEL SCALING
+    // =====================
+    function getLevelMaxNum() {
+      var base = difficulty === &#34;easy&#34; ? 10 : difficulty === &#34;medium&#34; ? 25 : 50;
+      // Each level adds bigger numbers
+      return base + (level - 1) * 10;
+    }
+
+    function getLevelMulMax() {
+      var base = difficulty === &#34;easy&#34; ? 10 : difficulty === &#34;medium&#34; ? 12 : 15;
+      return Math.min(base + (level - 1) * 3, 30);
+    }
+
+    // =====================
+    // NEW QUESTION
+    // =====================
+    function newQuestion() {
+      waiting = false;
+      questionCount++;
+      document.getElementById(&#34;questionNum&#34;).textContent = &#34;Question &#34; + questionCount;
+      document.getElementById(&#34;answerInput&#34;).value = &#34;&#34;;
+      document.getElementById(&#34;feedback&#34;).textContent = &#34;&#34;;
+      document.getElementById(&#34;hintText&#34;).textContent = &#34;&#34;;
+      document.getElementById(&#34;answerInput&#34;).focus();
+      document.getElementById(&#34;answerInput&#34;).type = &#34;text&#34;;
+
+      var num1, num2, questionText, hint = &#34;&#34;;
+      var maxNum = getLevelMaxNum();
+      var mulMax = getLevelMulMax();
+
+      if (topic === &#34;addition&#34;) {
+        num1 = randomNumber(1, maxNum); num2 = randomNumber(1, maxNum);
+        currentAnswer = num1 + num2; currentAnswerStr = String(currentAnswer);
+        questionText = num1 + &#34; + &#34; + num2 + &#34; = ?&#34;;
+
+      } else if (topic === &#34;subtraction&#34;) {
+        num1 = randomNumber(1, maxNum); num2 = randomNumber(1, num1);
+        currentAnswer = num1 - num2; currentAnswerStr = String(currentAnswer);
+        questionText = num1 + &#34; - &#34; + num2 + &#34; = ?&#34;;
+
+      } else if (topic === &#34;multiplication&#34;) {
+        num1 = randomNumber(1, mulMax); num2 = randomNumber(1, mulMax);
+        currentAnswer = num1 * num2; currentAnswerStr = String(currentAnswer);
+        questionText = num1 + &#34; \u00d7 &#34; + num2 + &#34; = ?&#34;;
+
+      } else if (topic === &#34;division&#34;) {
+        num2 = randomNumber(1, mulMax); currentAnswer = randomNumber(1, mulMax);
+        num1 = num2 * currentAnswer; currentAnswerStr = String(currentAnswer);
+        questionText = num1 + &#34; \u00f7 &#34; + num2 + &#34; = ?&#34;;
+
+      } else if (topic === &#34;mixed&#34;) {
+        var ops = [&#34;+&#34;,&#34;-&#34;,&#34;\u00d7&#34;,&#34;\u00f7&#34;];
+        var op = ops[randomNumber(0,3)];
+        if (op===&#34;+&#34;) { num1=randomNumber(1,maxNum); num2=randomNumber(1,maxNum); currentAnswer=num1+num2; }
+        else if (op===&#34;-&#34;) { num1=randomNumber(1,maxNum); num2=randomNumber(1,num1); currentAnswer=num1-num2; }
+        else if (op===&#34;\u00d7&#34;) { num1=randomNumber(1,mulMax); num2=randomNumber(1,mulMax); currentAnswer=num1*num2; }
+        else { num2=randomNumber(1,12); currentAnswer=randomNumber(1,12); num1=num2*currentAnswer; }
+        currentAnswerStr = String(currentAnswer);
+        questionText = num1 + &#34; &#34; + op + &#34; &#34; + num2 + &#34; = ?&#34;;
+
+      } else if (topic === &#34;decimals&#34;) {
+        var places = difficulty === &#34;easy&#34; ? 1 : difficulty === &#34;medium&#34; ? 1 : 2;
+        var dMax = difficulty === &#34;easy&#34; ? 10 + level * 5 : difficulty === &#34;medium&#34; ? 20 + level * 8 : 50 + level * 10;
+        var dOps = difficulty === &#34;easy&#34; ? [&#34;+&#34;,&#34;-&#34;] : [&#34;+&#34;,&#34;-&#34;,&#34;\u00d7&#34;];
+        var dOp = dOps[randomNumber(0, dOps.length - 1)];
+        if (dOp === &#34;+&#34;) {
+          num1 = randomDecimal(1, dMax, places); num2 = randomDecimal(1, dMax, places);
+          currentAnswer = parseFloat((num1 + num2).toFixed(places));
+          questionText = num1 + &#34; + &#34; + num2 + &#34; = ?&#34;;
+        } else if (dOp === &#34;-&#34;) {
+          num1 = randomDecimal(2, dMax, places); num2 = randomDecimal(1, num1, places);
+          currentAnswer = parseFloat((num1 - num2).toFixed(places));
+          questionText = num1 + &#34; - &#34; + num2 + &#34; = ?&#34;;
+        } else {
+          num1 = randomDecimal(1, 10, 1); num2 = randomNumber(1, 9);
+          currentAnswer = parseFloat((num1 * num2).toFixed(1));
+          questionText = num1 + &#34; \u00d7 &#34; + num2 + &#34; = ?&#34;;
+        }
+        currentAnswerStr = String(currentAnswer);
+        hint = &#34;Answer with decimals (e.g. 3.5)&#34;;
+
+      } else if (topic === &#34;algebra&#34;) {
+        var aMax = maxNum;
+        var aOps = difficulty === &#34;easy&#34; ? [&#34;+&#34;,&#34;-&#34;] : [&#34;+&#34;,&#34;-&#34;,&#34;\u00d7&#34;];
+        var aOp = aOps[randomNumber(0, aOps.length - 1)];
+        currentAnswer = randomNumber(1, aMax);
+        if (aOp === &#34;+&#34;) {
+          num2 = randomNumber(1, aMax); var r = currentAnswer + num2;
+          questionText = &#34;x + &#34; + num2 + &#34; = &#34; + r;
+          hint = &#34;Find x!&#34;;
+        } else if (aOp === &#34;-&#34;) {
+          num2 = randomNumber(1, currentAnswer); var r2 = currentAnswer - num2;
+          questionText = &#34;x - &#34; + num2 + &#34; = &#34; + r2;
+          hint = &#34;Find x!&#34;;
+        } else {
+          currentAnswer = randomNumber(1, 12 + level); num2 = randomNumber(2, 12);
+          var r3 = currentAnswer * num2;
+          questionText = &#34;x \u00d7 &#34; + num2 + &#34; = &#34; + r3;
+          hint = &#34;Find x!&#34;;
+        }
+        currentAnswerStr = String(currentAnswer);
+
+      } else if (topic === &#34;fractions&#34;) {
+        if (difficulty === &#34;easy&#34;) {
+          var denoms = [2, 4];
+          var d = denoms[randomNumber(0, denoms.length - 1)];
+          var n = randomNumber(1, d - 1);
+          var whole = randomNumber(1, 5 + level);
+          currentAnswer = parseFloat((whole + n / d).toFixed(2));
+          currentAnswerStr = String(currentAnswer);
+          questionText = whole + &#34; + &#34; + n + &#34;/&#34; + d + &#34; = ?&#34;;
+          hint = &#34;Answer as decimal (e.g. 3.5)&#34;;
+        } else if (difficulty === &#34;medium&#34;) {
+          var factor = randomNumber(2, 5);
+          var sN = randomNumber(1, 6); var sD = randomNumber(sN + 1, 8);
+          while (gcd(sN, sD) &gt; 1) { sN = randomNumber(1, 6); sD = randomNumber(sN + 1, 8); }
+          questionText = &#34;Simplify: &#34; + (sN * factor) + &#34;/&#34; + (sD * factor);
+          currentAnswerStr = sN + &#34;/&#34; + sD; currentAnswer = null;
+          hint = &#34;Write as fraction (e.g. 2/3)&#34;;
+        } else {
+          var d1 = randomNumber(2, 6); var n1 = randomNumber(1, d1 - 1); var n2f = randomNumber(1, d1 - 1);
+          var sumN = n1 + n2f;
+          questionText = n1 + &#34;/&#34; + d1 + &#34; + &#34; + n2f + &#34;/&#34; + d1 + &#34; = ?&#34;;
+          if (sumN &gt;= d1) {
+            var wh = Math.floor(sumN / d1); var rem = sumN % d1;
+            if (rem === 0) currentAnswerStr = String(wh);
+            else { var g = gcd(rem, d1); currentAnswerStr = wh + &#34; &#34; + (rem/g) + &#34;/&#34; + (d1/g); }
+          } else { var g2 = gcd(sumN, d1); currentAnswerStr = (sumN/g2) + &#34;/&#34; + (d1/g2); }
+          currentAnswer = null;
+          hint = &#34;Simplify! (e.g. 1 1/2 or 3/4)&#34;;
+        }
+
+      } else if (topic === &#34;squares&#34;) {
+        if (difficulty === &#34;hard&#34; &amp;&amp; randomNumber(1,2) === 1) {
+          num1 = randomNumber(1, 12 + level);
+          var sq = num1 * num1;
+          currentAnswer = num1; currentAnswerStr = String(num1);
+          questionText = &#34;\u221a&#34; + sq + &#34; = ?&#34;;
+          hint = &#34;What \u00d7 itself = &#34; + sq + &#34;?&#34;;
+        } else {
+          num1 = randomNumber(1, difficulty === &#34;easy&#34; ? 10 + level : difficulty === &#34;medium&#34; ? 15 + level : 20 + level);
+          currentAnswer = num1 * num1; currentAnswerStr = String(currentAnswer);
+          questionText = num1 + &#34;\u00b2 = ?&#34;;
+          hint = num1 + &#34; \u00d7 &#34; + num1;
+        }
+
+      } else if (topic === &#34;percentage&#34;) {
+        if (difficulty === &#34;easy&#34;) {
+          var pcts = [10,25,50]; var p = pcts[randomNumber(0, pcts.length - 1)];
+          num1 = randomNumber(2, 10 + level) * 10;
+          currentAnswer = (p / 100) * num1; currentAnswerStr = String(currentAnswer);
+          questionText = p + &#34;% of &#34; + num1 + &#34; = ?&#34;;
+        } else if (difficulty === &#34;medium&#34;) {
+          var pcts2 = [10,20,25,50,75]; var p2 = pcts2[randomNumber(0, pcts2.length - 1)];
+          num1 = randomNumber(2, 10 + level) * 20;
+          currentAnswer = (p2 / 100) * num1; currentAnswerStr = String(currentAnswer);
+          questionText = p2 + &#34;% of &#34; + num1 + &#34; = ?&#34;;
+        } else {
+          var p3 = randomNumber(1, 9) * 10 + randomNumber(0, 1) * 5;
+          num1 = randomNumber(2, 10 + level) * 20;
+          currentAnswer = parseFloat(((p3 / 100) * num1).toFixed(1)); currentAnswerStr = String(currentAnswer);
+          questionText = p3 + &#34;% of &#34; + num1 + &#34; = ?&#34;;
+        }
+      }
+
+      document.getElementById(&#34;questionDisplay&#34;).textContent = questionText;
+      if (hint) document.getElementById(&#34;hintText&#34;).textContent = hint;
+    }
+
+    // =====================
+    // CHECK ANSWER
+    // =====================
+    function checkAnswer() {
+      if (waiting) return;
+      var guessRaw = document.getElementById(&#34;answerInput&#34;).value.trim();
+      if (guessRaw === &#34;&#34;) {
+        document.getElementById(&#34;feedback&#34;).textContent = &#34;Type an answer first!&#34;;
+        document.getElementById(&#34;feedback&#34;).style.color = &#34;#f38ba8&#34;;
+        return;
+      }
+
+      var isCorrect = false;
+      if (currentAnswer === null) {
+        isCorrect = guessRaw.replace(/\s+/g, &#34; &#34;).trim() === currentAnswerStr.replace(/\s+/g, &#34; &#34;).trim();
+      } else {
+        isCorrect = parseFloat(guessRaw) === currentAnswer;
+      }
+
+      if (isCorrect) {
+        correctCount++; streak++;
+        if (streak &gt; bestStreak) bestStreak = streak;
+
+        var points = 10;
+        if (streak &gt;= 5) { points = 30; }
+        else if (streak &gt;= 3) { points = 20; }
+
+        if (streak &gt; 0 &amp;&amp; streak % 10 === 0) {
+          timeLeft += 5;
+          document.getElementById(&#34;timerDisplay&#34;).innerHTML = &#34;\u23f1 &#34; + timeLeft + &#34;s&#34;;
+          showBonus(&#34;+&#34; + points + &#34; x10 STREAK! +5s!&#34;);
+          soundStreak();
+        } else if (streak &gt;= 5) { showBonus(&#34;+30 SUPER!&#34;); soundStreak(); }
+        else if (streak &gt;= 3) { showBonus(&#34;+20 STREAK!&#34;); soundStreak(); }
+        else { soundCorrect(); }
+
+        score += points;
+
+        // XP system
+        var xpGain = points;
+        xp += xpGain;
+        checkLevelUp();
+
+        updateScore(); updateStreak(); updateLevel();
+
+        document.getElementById(&#34;feedback&#34;).innerHTML = &#34;&amp;#127881; Correct! +&#34; + points + &#34; pts!&#34;;
+        document.getElementById(&#34;feedback&#34;).style.color = &#34;#a6e3a1&#34;;
+        document.getElementById(&#34;questionDisplay&#34;).classList.add(&#34;pop&#34;);
+        waiting = true;
+        setTimeout(function () {
+          document.getElementById(&#34;questionDisplay&#34;).classList.remove(&#34;pop&#34;);
+          newQuestion();
+        }, 800);
+
+      } else {
+        wrongCount++; streak = 0; lives--;
+        soundWrong();
+        updateLives(); updateStreak();
+
+        var disp = currentAnswer !== null ? currentAnswer : currentAnswerStr;
+        document.getElementById(&#34;feedback&#34;).innerHTML = &#34;&amp;#128533; Wrong! Answer: &#34; + disp;
+        document.getElementById(&#34;feedback&#34;).style.color = &#34;#f38ba8&#34;;
+        document.getElementById(&#34;questionDisplay&#34;).classList.add(&#34;shake&#34;);
+        setTimeout(function () { document.getElementById(&#34;questionDisplay&#34;).classList.remove(&#34;shake&#34;); }, 400);
+
+        waiting = true;
+        if (lives &lt;= 0) { setTimeout(function () { endGame(); }, 1000); }
+        else { setTimeout(function () { newQuestion(); }, 1500); }
+      }
+    }
+
+    // =====================
+    // LEVEL SYSTEM
+    // =====================
+    function checkLevelUp() {
+      while (xp &gt;= xpForNext) {
+        xp -= xpForNext;
+        level++;
+        xpForNext = getXpNeeded(level);
+        showLevelUpOverlay();
+        soundLevelUp();
+      }
+    }
+
+    function showLevelUpOverlay() {
+      var overlay = document.getElementById(&#34;levelUpOverlay&#34;);
+      document.getElementById(&#34;levelUpText&#34;).textContent = &#34;LEVEL UP!&#34;;
+      var messages = [
+        &#34;&#34;,
+        &#34;Bigger numbers incoming!&#34;,
+        &#34;Getting tougher!&#34;,
+        &#34;You&#39;re on fire!&#34;,
+        &#34;Math master mode!&#34;,
+        &#34;Legendary difficulty!&#34;,
+        &#34;Are you a calculator?!&#34;,
+        &#34;Unstoppable!&#34;,
+        &#34;Beyond genius!&#34;,
+        &#34;MAX POWER!&#34;
+      ];
+      var msg = messages[Math.min(level - 1, messages.length - 1)] || &#34;Incredible!&#34;;
+      document.getElementById(&#34;levelUpSub&#34;).textContent = &#34;Level &#34; + level + &#34; \u{1F31F} &#34; + msg;
+      overlay.classList.add(&#34;show&#34;);
+      setTimeout(function () { overlay.classList.remove(&#34;show&#34;); }, 1800);
+    }
+
+    function updateLevel() {
+      document.getElementById(&#34;levelDisplay&#34;).innerHTML = &#34;&amp;#11088; Lv. &#34; + level;
+      var pct = Math.min((xp / xpForNext) * 100, 100);
+      document.getElementById(&#34;xpFill&#34;).style.width = pct + &#34;%&#34;;
+      document.getElementById(&#34;xpText&#34;).textContent = xp + &#34; / &#34; + xpForNext + &#34; XP&#34;;
+    }
+
+    // =====================
+    // SKIP
+    // =====================
+    function skipQuestion() {
+      if (waiting) return;
+      skippedCount++; streak = 0; updateStreak(); waiting = true;
+      soundSkip();
+      var disp = currentAnswer !== null ? currentAnswer : currentAnswerStr;
+      document.getElementById(&#34;feedback&#34;).innerHTML = &#34;&amp;#9193; Skipped! Answer: &#34; + disp;
+      document.getElementById(&#34;feedback&#34;).style.color = &#34;#89dceb&#34;;
+      setTimeout(function () { newQuestion(); }, 1000);
+    }
+
+    // =====================
+    // UPDATES
+    // =====================
+    function updateScore() {
+      document.getElementById(&#34;scoreDisplay&#34;).textContent = &#34;Score: &#34; + score;
+      document.getElementById(&#34;scoreDisplay&#34;).classList.add(&#34;pop&#34;);
+      setTimeout(function () { document.getElementById(&#34;scoreDisplay&#34;).classList.remove(&#34;pop&#34;); }, 400);
+    }
+
+    function updateLives() {
+      var h = &#34;&#34;;
+      for (var i = 0; i &lt; lives; i++) h += &#34;&amp;#10084;&#34;;
+      for (var j = lives; j &lt; 3; j++) h += &#34;&amp;#128420;&#34;;
+      document.getElementById(&#34;livesDisplay&#34;).innerHTML = h;
+    }
+
+    function updateStreak() {
+      document.getElementById(&#34;streakText&#34;).innerHTML = &#34;&amp;#128293; Streak: &#34; + streak;
+      document.getElementById(&#34;streakFill&#34;).style.width = Math.min(streak * 20, 100) + &#34;%&#34;;
+    }
+
+    function showBonus(text) {
+      var el = document.createElement(&#34;div&#34;);
+      el.className = &#34;bonus-float&#34;; el.textContent = text;
+      el.style.left = &#34;50%&#34;; el.style.top = &#34;40%&#34;;
+      document.body.appendChild(el);
+      setTimeout(function () { el.remove(); }, 1000);
+    }
+
+    // =====================
+    // END GAME
+    // =====================
+    function endGame() {
+      clearInterval(timer);
+      soundGameOver();
+      showScreen(&#34;endScreen&#34;);
+
+      var total = correctCount + wrongCount;
+      var pct = total &gt; 0 ? Math.round((correctCount / total) * 100) : 0;
+
+      var grade, emoji, title;
+      if (pct &gt;= 90) { grade=&#34;A+&#34;; emoji=&#34;&amp;#129351;&#34;; title=&#34;AMAZING, &#34;+playerName+&#34;!&#34;; }
+      else if (pct &gt;= 80) { grade=&#34;A&#34;; emoji=&#34;&amp;#11088;&#34;; title=&#34;GREAT JOB, &#34;+playerName+&#34;!&#34;; }
+      else if (pct &gt;= 70) { grade=&#34;B&#34;; emoji=&#34;&amp;#128170;&#34;; title=&#34;GOOD WORK, &#34;+playerName+&#34;!&#34;; }
+      else if (pct &gt;= 50) { grade=&#34;C&#34;; emoji=&#34;&amp;#128515;&#34;; title=&#34;NICE TRY, &#34;+playerName+&#34;!&#34;; }
+      else { grade=&#34;D&#34;; emoji=&#34;&amp;#128170;&#34;; title=&#34;KEEP PRACTICING, &#34;+playerName+&#34;!&#34;; }
+
+      document.getElementById(&#34;endEmoji&#34;).innerHTML = emoji;
+      document.getElementById(&#34;endTitle&#34;).textContent = title;
+      document.getElementById(&#34;gradeBox&#34;).innerHTML =
+        &#39;&lt;span style=&#34;color:#f9e64f;font-size:65px;&#34;&gt;&#39;+grade+&#39;&lt;/span&gt;&lt;br&gt;&#39; +
+        &#39;&lt;span style=&#34;font-size:20px;color:#89dceb;&#34;&gt;&#39;+pct+&#39;% correct&lt;/span&gt;&#39;;
+
+      var tn = {addition:&#34;Addition&#34;,subtraction:&#34;Subtraction&#34;,multiplication:&#34;Multiplication&#34;,
+        division:&#34;Division&#34;,mixed:&#34;Mixed&#34;,decimals:&#34;Decimals&#34;,algebra:&#34;Algebra&#34;,
+        fractions:&#34;Fractions&#34;,squares:&#34;Squares&#34;,percentage:&#34;Percentage&#34;};
+
+      document.getElementById(&#34;statsBox&#34;).innerHTML =
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#127918; Score&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+score+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#11088; Level Reached&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+level+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#9989; Correct&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+correctCount+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#10060; Wrong&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+wrongCount+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#9193; Skipped&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+skippedCount+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#128293; Best Streak&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+bestStreak+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#128218; Topic&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+(tn[topic]||topic)+&#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#127942; Difficulty&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39;+difficulty.toUpperCase()+&#39;&lt;/span&gt;&lt;/div&gt;&#39;;
+
+      saveToLeaderboard(playerName, score, topic, difficulty, pct, level);
+
+      if (asyncCtx) {
+        finishAsyncChallenge();
+      }
+    }
+
+    // =====================
+    // LEADERBOARD
+    // =====================
+    function getLeaderboard() {
+      var d = localStorage.getItem(&#34;mathGameLeaderboard&#34;);
+      return d ? JSON.parse(d) : [];
+    }
+
+    function saveToLeaderboard(name, sc, tp, df, pct, lvl) {
+      var lb = getLeaderboard();
+      lb.push({ name:name, score:sc, topic:tp, difficulty:df, percent:pct, level:lvl, date:new Date().toLocaleDateString() });
+      var diffOrder = { hard: 0, medium: 1, easy: 2 };
+      lb.sort(function(a,b){
+        var da = diffOrder[a.difficulty] !== undefined ? diffOrder[a.difficulty] : 3;
+        var db = diffOrder[b.difficulty] !== undefined ? diffOrder[b.difficulty] : 3;
+        if (da !== db) return da - db;
+        return b.score - a.score;
+      });
+      if (lb.length &gt; 50) lb = lb.slice(0, 50);
+      localStorage.setItem(&#34;mathGameLeaderboard&#34;, JSON.stringify(lb));
+      syncToCloud();
+    }
+
+    function showLeaderboard() {
+      soundClick();
+      showScreen(&#34;leaderboardScreen&#34;);
+      syncFromCloud();
+      renderLeaderboard();
+    }
+
+    function clearAllScores() {
+      // Check if locked out
+      var lockUntil = localStorage.getItem(&#34;clearLockUntil&#34;);
+      if (lockUntil &amp;&amp; Date.now() &lt; Number(lockUntil)) {
+        var hoursLeft = Math.ceil((Number(lockUntil) - Date.now()) / 3600000);
+        alert(&#34;Too many wrong attempts! Locked for &#34; + hoursLeft + &#34; more hour&#34; + (hoursLeft === 1 ? &#34;&#34; : &#34;s&#34;) + &#34;.&#34;);
+        return;
+      }
+      // Reset attempts if lock expired
+      if (lockUntil &amp;&amp; Date.now() &gt;= Number(lockUntil)) {
+        localStorage.removeItem(&#34;clearAttempts&#34;);
+        localStorage.removeItem(&#34;clearLockUntil&#34;);
+      }
+
+      var attempts = Number(localStorage.getItem(&#34;clearAttempts&#34;) || 0);
+      var attemptsLeft = 5 - attempts;
+
+      var code = prompt(&#34;Enter password to erase all scores (&#34; + attemptsLeft + &#34; attempt&#34; + (attemptsLeft === 1 ? &#34;&#34; : &#34;s&#34;) + &#34; left):&#34;);
+      if (!code) return;
+
+      if (code.toLowerCase() !== &#34;riyansh&#34;) {
+        attempts++;
+        localStorage.setItem(&#34;clearAttempts&#34;, attempts);
+        if (attempts &gt;= 5) {
+          localStorage.setItem(&#34;clearLockUntil&#34;, Date.now() + 86400000);
+          alert(&#34;Wrong password! Locked for 24 hours.&#34;);
+        } else {
+          alert(&#34;Wrong password! &#34; + (5 - attempts) + &#34; attempt&#34; + (5 - attempts === 1 ? &#34;&#34; : &#34;s&#34;) + &#34; left.&#34;);
+        }
+        return;
+      }
+
+      // Correct password - reset attempts and clear scores
+      localStorage.removeItem(&#34;clearAttempts&#34;);
+      localStorage.removeItem(&#34;clearLockUntil&#34;);
+      localStorage.setItem(&#34;mathGameLeaderboard&#34;, JSON.stringify([]));
+      fetch(&#34;/api/sync&#34;, {
+        method: &#34;POST&#34;,
+        headers: { &#34;Content-Type&#34;: &#34;application/json&#34; },
+        body: JSON.stringify({ leaderboard: [] })
+      }).catch(function(){});
+      renderLeaderboard();
+      soundClick();
+    }
+
+    function renderLeaderboard() {
+      var lb = getLeaderboard();
+      var body = document.getElementById(&#34;lbBody&#34;);
+      body.innerHTML = &#34;&#34;;
+
+      var filtered = lbFilter === &#34;all&#34; ? lb : lb.filter(function(e){ return e.topic === lbFilter; });
+
+      if (filtered.length === 0) {
+        body.innerHTML = &#39;&lt;div class=&#34;lb-empty&#34;&gt;No scores yet! Play a game! &amp;#127918;&lt;/div&gt;&#39;;
+        return;
+      }
+
+      var medals = [&#34;&amp;#129351;&#34;,&#34;&amp;#129352;&#34;,&#34;&amp;#129353;&#34;];
+      var tn = {addition:&#34;Add&#34;,subtraction:&#34;Sub&#34;,multiplication:&#34;Mul&#34;,division:&#34;Div&#34;,mixed:&#34;Mix&#34;,
+        decimals:&#34;Dec&#34;,algebra:&#34;Alg&#34;,fractions:&#34;Frac&#34;,squares:&#34;Sq&#34;,percentage:&#34;Pct&#34;};
+
+      // Group by difficulty
+      var groups = [&#34;hard&#34;, &#34;medium&#34;, &#34;easy&#34;];
+      var groupLabels = { hard: &#34;&amp;#10084; HARD&#34;, medium: &#34;&amp;#128155; MEDIUM&#34;, easy: &#34;&amp;#128154; EASY&#34; };
+      var groupColors = { hard: &#34;#f38ba8&#34;, medium: &#34;#f9e64f&#34;, easy: &#34;#a6e3a1&#34; };
+
+      for (var g = 0; g &lt; groups.length; g++) {
+        var diff = groups[g];
+        var entries = filtered.filter(function(e) { return e.difficulty === diff; });
+        // Sort by score within group
+        entries.sort(function(a, b) { return b.score - a.score; });
+
+        if (entries.length === 0) continue;
+
+        // Group header
+        var header = document.createElement(&#34;div&#34;);
+        header.style.cssText = &#34;padding:10px 15px;font-size:18px;font-weight:bold;color:&#34; + groupColors[diff] + &#34;;background-color:#1e1e2e;border-bottom:2px solid &#34; + groupColors[diff] + &#34;;&#34;;
+        header.innerHTML = groupLabels[diff];
+        body.appendChild(header);
+
+        // Entries (max 10 per group)
+        for (var i = 0; i &lt; Math.min(entries.length, 10); i++) {
+          var e = entries[i];
+          var rank = i &lt; 3 ? medals[i] : (i + 1);
+
+          var row = document.createElement(&#34;div&#34;);
+          row.className = &#34;lb-row&#34;;
+          row.innerHTML =
+            &#39;&lt;div class=&#34;lb-rank&#34;&gt;&#39;+rank+&#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;lb-name&#34;&gt;&#39;+e.name+&#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;lb-score-col&#34;&gt;&#39;+e.score+&#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;lb-level-col&#34;&gt;Lv.&#39;+(e.level || 1)+&#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;lb-topic&#34;&gt;&#39;+(tn[e.topic]||e.topic)+&#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;lb-diff&#34; style=&#34;color:&#39;+groupColors[diff]+&#39;;&#34;&gt;&#39;+e.difficulty.toUpperCase()+&#39;&lt;/div&gt;&#39;;
+          body.appendChild(row);
+        }
+      }
+    }
+
+    function filterLB(f, btn) {
+      lbFilter = f; soundClick();
+      var btns = document.querySelectorAll(&#34;.filter-btn&#34;);
+      for (var i = 0; i &lt; btns.length; i++) btns[i].classList.remove(&#34;active&#34;);
+      btn.classList.add(&#34;active&#34;);
+      renderLeaderboard();
+    }
+
+
+    // =====================
+    // CLOUD SYNC (Automatic!)
+    // =====================
+    var isSyncing = false;
+
+    function syncFromCloud() {
+      if (isSyncing) return;
+      isSyncing = true;
+      updateSyncStatus(&#34;syncing&#34;);
+
+      fetch(&#34;/api/sync&#34;)
+        .then(function(res) { return res.json(); })
+        .then(function(cloudScores) {
+          if (Array.isArray(cloudScores) &amp;&amp; cloudScores.length &gt; 0) {
+            var localLb = getLeaderboard();
+            var merged = mergeLeaderboards(localLb, cloudScores);
+            localStorage.setItem(&#34;mathGameLeaderboard&#34;, JSON.stringify(merged));
+          }
+          updateSyncStatus(&#34;synced&#34;);
+          isSyncing = false;
+        })
+        .catch(function(err) {
+          updateSyncStatus(&#34;error&#34;);
+          isSyncing = false;
+        });
+    }
+
+    function syncToCloud() {
+      var lb = getLeaderboard();
+      if (lb.length === 0) return;
+
+      fetch(&#34;/api/sync&#34;, {
+        method: &#34;POST&#34;,
+        headers: { &#34;Content-Type&#34;: &#34;application/json&#34; },
+        body: JSON.stringify({ leaderboard: lb })
+      })
+        .then(function(res) { return res.json(); })
+        .then(function(merged) {
+          if (Array.isArray(merged)) {
+            localStorage.setItem(&#34;mathGameLeaderboard&#34;, JSON.stringify(merged));
+          }
+          updateSyncStatus(&#34;synced&#34;);
+        })
+        .catch(function(err) {
+          updateSyncStatus(&#34;error&#34;);
+        });
+    }
+
+    function updateSyncStatus(status) {
+      var el = document.getElementById(&#34;syncStatus&#34;);
+      if (!el) return;
+      if (status === &#34;syncing&#34;) {
+        el.innerHTML = &#34;&amp;#9729; Syncing...&#34;;
+        el.style.color = &#34;#f9e64f&#34;;
+      } else if (status === &#34;synced&#34;) {
+        el.innerHTML = &#34;&amp;#9989; Synced to cloud!&#34;;
+        el.style.color = &#34;#a6e3a1&#34;;
+      } else if (status === &#34;error&#34;) {
+        el.innerHTML = &#34;&amp;#9729; Offline mode&#34;;
+        el.style.color = &#34;#888&#34;;
+      }
+    }
+
+    function mergeLeaderboards(local, cloud) {
+      var all = (local || []).concat(cloud || []);
+      var seen = {};
+      var unique = [];
+      for (var i = 0; i &lt; all.length; i++) {
+        var e = all[i];
+        var key = e.name + &#34;|&#34; + e.score + &#34;|&#34; + e.topic + &#34;|&#34; + e.difficulty + &#34;|&#34; + e.date;
+        if (!seen[key]) {
+          seen[key] = true;
+          unique.push(e);
+        }
+      }
+      var diffOrder = { hard: 0, medium: 1, easy: 2 };
+      unique.sort(function(a,b){
+        var da = diffOrder[a.difficulty] !== undefined ? diffOrder[a.difficulty] : 3;
+        var db = diffOrder[b.difficulty] !== undefined ? diffOrder[b.difficulty] : 3;
+        if (da !== db) return da - db;
+        return b.score - a.score;
+      });
+      if (unique.length &gt; 50) unique = unique.slice(0, 50);
+      return unique;
+    }
+
+    // =====================
+    // NUMBER PAD
+    // =====================
+    function tapNum(n) {
+      var inp = document.getElementById(&#34;answerInput&#34;);
+      inp.value += n;
+      soundClick();
+    }
+    function tapDel() {
+      var inp = document.getElementById(&#34;answerInput&#34;);
+      inp.value = inp.value.slice(0, -1);
+      soundClick();
+    }
+
+    // =====================
+    // NAVIGATION
+    // =====================
+    function goToStart() {
+      clearInterval(timer); soundClick();
+      document.getElementById(&#34;startError&#34;).textContent = &#34;&#34;;
+      document.getElementById(&#34;timerDisplay&#34;).style.color = &#34;#cba6f7&#34;;
+      showScreen(&#34;startScreen&#34;);
+    }
+
+    // =====================
+    // INBOX POLLING
+    // =====================
+    var inboxTimer = null;
+    function startInboxPoll() {
+      stopInboxPoll();
+      inboxTimer = setInterval(refreshInbox, 4000);
+    }
+    function stopInboxPoll() { if (inboxTimer) { clearInterval(inboxTimer); inboxTimer = null; } }
+
+    async function refreshInbox() {
+      if (!currentUser) return;
+      try {
+        var rec = await fbGet(&#34;/users/&#34; + currentUser);
+        if (!rec) return;
+        var reqs = rec.friendRequests || {};
+        var chs = rec.challenges || {};
+        var reqCount = Object.keys(reqs).length;
+        var chCount = 0;
+        for (var k in chs) { if (chs[k].status === &#34;pending&#34;) chCount++; }
+
+        var reqBadge = document.getElementById(&#34;reqBadge&#34;);
+        reqBadge.textContent = reqCount;
+        reqBadge.style.display = reqCount &gt; 0 ? &#34;inline-block&#34; : &#34;none&#34;;
+
+        var incBadge = document.getElementById(&#34;incBadge&#34;);
+        incBadge.textContent = chCount;
+        incBadge.style.display = chCount &gt; 0 ? &#34;inline-block&#34; : &#34;none&#34;;
+
+        var inbox = document.getElementById(&#34;inboxBadge&#34;);
+        var total = reqCount + chCount;
+        inbox.textContent = total;
+        inbox.style.display = total &gt; 0 ? &#34;inline-block&#34; : &#34;none&#34;;
+      } catch (e) {}
+    }
+
+    // =====================
+    // FRIENDS
+    // =====================
+    var friendsTab = &#34;friends&#34;;
+
+    function showFriends() {
+      soundClick();
+      showScreen(&#34;friendsScreen&#34;);
+      renderFriends();
+    }
+
+    function switchFriendsTab(tab, btn) {
+      friendsTab = tab;
+      var btns = document.querySelectorAll(&#34;#friendsScreen .tab-btn&#34;);
+      for (var i = 0; i &lt; btns.length; i++) btns[i].classList.remove(&#34;active&#34;);
+      btn.classList.add(&#34;active&#34;);
+      renderFriends();
+    }
+
+    async function renderFriends() {
+      var list = document.getElementById(&#34;friendsList&#34;);
+      list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;Loading...&lt;/div&gt;&#39;;
+      var rec = await fbGet(&#34;/users/&#34; + currentUser);
+      rec = rec || {};
+      var items;
+      if (friendsTab === &#34;friends&#34;) {
+        items = Object.keys(rec.friends || {});
+        if (items.length === 0) { list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;No friends yet. Add one above!&lt;/div&gt;&#39;; return; }
+        list.innerHTML = &#34;&#34;;
+        items.forEach(function(name) {
+          var card = document.createElement(&#34;div&#34;);
+          card.className = &#34;f-card&#34;;
+          card.innerHTML =
+            &#39;&lt;div&gt;&lt;div class=&#34;f-name&#34;&gt;&amp;#128100; &#39; + name + &#39;&lt;/div&gt;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-actions&#34;&gt;&#39; +
+              &#39;&lt;button class=&#34;btn btn-small btn-green&#34; onclick=&#34;openChallengeModal(\&#39;&#39; + name + &#39;\&#39;)&#34;&gt;&amp;#9876; Challenge&lt;/button&gt;&#39; +
+              &#39;&lt;button class=&#34;btn btn-small btn-pink&#34; onclick=&#34;removeFriend(\&#39;&#39; + name + &#39;\&#39;)&#34;&gt;Remove&lt;/button&gt;&#39; +
+            &#39;&lt;/div&gt;&#39;;
+          list.appendChild(card);
+        });
+      } else {
+        items = Object.keys(rec.friendRequests || {});
+        if (items.length === 0) { list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;No pending requests.&lt;/div&gt;&#39;; return; }
+        list.innerHTML = &#34;&#34;;
+        items.forEach(function(name) {
+          var card = document.createElement(&#34;div&#34;);
+          card.className = &#34;f-card&#34;;
+          card.innerHTML =
+            &#39;&lt;div&gt;&lt;div class=&#34;f-name&#34;&gt;&amp;#128100; &#39; + name + &#39;&lt;/div&gt;&lt;div class=&#34;f-sub&#34;&gt;wants to be friends&lt;/div&gt;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-actions&#34;&gt;&#39; +
+              &#39;&lt;button class=&#34;btn btn-small btn-green&#34; onclick=&#34;acceptFriend(\&#39;&#39; + name + &#39;\&#39;)&#34;&gt;Accept&lt;/button&gt;&#39; +
+              &#39;&lt;button class=&#34;btn btn-small btn-pink&#34; onclick=&#34;rejectFriend(\&#39;&#39; + name + &#39;\&#39;)&#34;&gt;Reject&lt;/button&gt;&#39; +
+            &#39;&lt;/div&gt;&#39;;
+          list.appendChild(card);
+        });
+      }
+    }
+
+    async function sendFriendRequest() {
+      var err = document.getElementById(&#34;friendError&#34;);
+      err.textContent = &#34;&#34;;
+      var target = document.getElementById(&#34;addFriendInput&#34;).value.trim().toLowerCase();
+      if (!target) { err.textContent = &#34;Enter a username.&#34;; return; }
+      if (target === currentUser) { err.textContent = &#34;You can&#39;t friend yourself!&#34;; return; }
+      var rec = await fbGet(&#34;/users/&#34; + target);
+      if (!rec) { err.textContent = &#34;No user with that name.&#34;; return; }
+      // Already friends?
+      var me = await fbGet(&#34;/users/&#34; + currentUser) || {};
+      if (me.friends &amp;&amp; me.friends[target]) { err.textContent = &#34;Already friends!&#34;; return; }
+      await fbPut(&#34;/users/&#34; + target + &#34;/friendRequests/&#34; + currentUser, true);
+      document.getElementById(&#34;addFriendInput&#34;).value = &#34;&#34;;
+      err.style.color = &#34;#a6e3a1&#34;; err.textContent = &#34;Request sent!&#34;;
+      setTimeout(function(){ err.textContent = &#34;&#34;; err.style.color = &#34;#f38ba8&#34;; }, 2500);
+    }
+
+    async function acceptFriend(from) {
+      await fbPut(&#34;/users/&#34; + currentUser + &#34;/friends/&#34; + from, true);
+      await fbPut(&#34;/users/&#34; + from + &#34;/friends/&#34; + currentUser, true);
+      await fbDelete(&#34;/users/&#34; + currentUser + &#34;/friendRequests/&#34; + from);
+      renderFriends(); refreshInbox();
+    }
+
+    async function rejectFriend(from) {
+      await fbDelete(&#34;/users/&#34; + currentUser + &#34;/friendRequests/&#34; + from);
+      renderFriends(); refreshInbox();
+    }
+
+    async function removeFriend(name) {
+      if (!confirm(&#34;Remove &#34; + name + &#34; from friends?&#34;)) return;
+      await fbDelete(&#34;/users/&#34; + currentUser + &#34;/friends/&#34; + name);
+      await fbDelete(&#34;/users/&#34; + name + &#34;/friends/&#34; + currentUser);
+      renderFriends();
+    }
+
+    // =====================
+    // CHALLENGES
+    // =====================
+    var challengesTab = &#34;incoming&#34;;
+    var chModalTarget = null;
+    var chModalTopic = &#34;&#34;;
+    var chModalDiff = &#34;&#34;;
+    var chModalMode = &#34;async&#34;;
+
+    function showChallenges() {
+      soundClick();
+      showScreen(&#34;challengesScreen&#34;);
+      renderChallenges();
+    }
+
+    function switchChallengesTab(tab, btn) {
+      challengesTab = tab;
+      var btns = document.querySelectorAll(&#34;#challengesScreen .tab-btn&#34;);
+      for (var i = 0; i &lt; btns.length; i++) btns[i].classList.remove(&#34;active&#34;);
+      btn.classList.add(&#34;active&#34;);
+      renderChallenges();
+    }
+
+    function topicLabel(t) {
+      var tn = { addition:&#34;Addition&#34;, subtraction:&#34;Subtraction&#34;, multiplication:&#34;Multiplication&#34;,
+        division:&#34;Division&#34;, mixed:&#34;Mixed&#34;, decimals:&#34;Decimals&#34;, algebra:&#34;Algebra&#34;,
+        fractions:&#34;Fractions&#34;, squares:&#34;Squares&#34;, percentage:&#34;Percentage&#34; };
+      return tn[t] || t;
+    }
+
+    async function renderChallenges() {
+      var list = document.getElementById(&#34;challengesList&#34;);
+      list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;Loading...&lt;/div&gt;&#39;;
+
+      if (challengesTab === &#34;incoming&#34;) {
+        var me = await fbGet(&#34;/users/&#34; + currentUser) || {};
+        var chs = me.challenges || {};
+        var ids = Object.keys(chs).filter(function(id){ return chs[id].status === &#34;pending&#34;; });
+        if (ids.length === 0) { list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;No challenges. Ask a friend!&lt;/div&gt;&#39;; return; }
+        list.innerHTML = &#34;&#34;;
+        ids.forEach(function(id) {
+          var c = chs[id];
+          var modeLabel = c.mode === &#34;live&#34; ? &#34;&amp;#9889; Live&#34; : &#34;&amp;#128336; Anytime&#34;;
+          var card = document.createElement(&#34;div&#34;);
+          card.className = &#34;f-card&#34;;
+          card.innerHTML =
+            &#39;&lt;div&gt;&lt;div class=&#34;f-name&#34;&gt;&amp;#128100; &#39; + c.from + &#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-sub&#34;&gt;&#39; + topicLabel(c.topic) + &#39; &amp;middot; &#39; + c.difficulty.toUpperCase() + &#39; &amp;middot; &#39; + modeLabel + &#39;&lt;/div&gt;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-actions&#34;&gt;&#39; +
+              &#39;&lt;button class=&#34;btn btn-small btn-green&#34; onclick=&#34;acceptChallenge(\&#39;&#39; + id + &#39;\&#39;)&#34;&gt;Play&lt;/button&gt;&#39; +
+              &#39;&lt;button class=&#34;btn btn-small btn-pink&#34; onclick=&#34;declineChallenge(\&#39;&#39; + id + &#39;\&#39;)&#34;&gt;Decline&lt;/button&gt;&#39; +
+            &#39;&lt;/div&gt;&#39;;
+          list.appendChild(card);
+        });
+      } else if (challengesTab === &#34;outgoing&#34;) {
+        // Scan all friends&#39; inboxes for challenges sent by me — too heavy. Instead store sent challenges locally.
+        var me = await fbGet(&#34;/users/&#34; + currentUser) || {};
+        var sent = me.sentChallenges || {};
+        var ids = Object.keys(sent);
+        if (ids.length === 0) { list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;No challenges sent.&lt;/div&gt;&#39;; return; }
+        list.innerHTML = &#34;&#34;;
+        ids.forEach(function(id) {
+          var c = sent[id];
+          var statusColor = c.status === &#34;pending&#34; ? &#34;#f9e64f&#34; : c.status === &#34;done&#34; ? &#34;#a6e3a1&#34; : &#34;#888&#34;;
+          var card = document.createElement(&#34;div&#34;);
+          card.className = &#34;f-card&#34;;
+          card.innerHTML =
+            &#39;&lt;div&gt;&lt;div class=&#34;f-name&#34;&gt;&amp;#10132; &#39; + c.to + &#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-sub&#34;&gt;&#39; + topicLabel(c.topic) + &#39; &amp;middot; &#39; + c.difficulty.toUpperCase() +
+            &#39; &lt;span style=&#34;color:&#39; + statusColor + &#39;;&#34;&gt;&amp;middot; &#39; + c.status + &#39;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&#39;;
+          list.appendChild(card);
+        });
+      } else {
+        // Results: finished async challenges
+        var me2 = await fbGet(&#34;/users/&#34; + currentUser) || {};
+        var results = me2.challengeResults || {};
+        var rIds = Object.keys(results).sort(function(a,b){ return (results[b].when || 0) - (results[a].when || 0); });
+        if (rIds.length === 0) { list.innerHTML = &#39;&lt;div class=&#34;empty-state&#34;&gt;No results yet.&lt;/div&gt;&#39;; return; }
+        list.innerHTML = &#34;&#34;;
+        rIds.forEach(function(id) {
+          var r = results[id];
+          var winColor = r.winner === currentUser ? &#34;#a6e3a1&#34; : r.winner === &#34;tie&#34; ? &#34;#f9e64f&#34; : &#34;#f38ba8&#34;;
+          var winText = r.winner === currentUser ? &#34;You won!&#34; : r.winner === &#34;tie&#34; ? &#34;Tie!&#34; : r.winner + &#34; won&#34;;
+          var card = document.createElement(&#34;div&#34;);
+          card.className = &#34;f-card&#34;;
+          card.innerHTML =
+            &#39;&lt;div&gt;&lt;div class=&#34;f-name&#34; style=&#34;color:&#39; + winColor + &#39;;&#34;&gt;&#39; + winText + &#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-sub&#34;&gt;vs &#39; + r.opponent + &#39; &amp;middot; &#39; + topicLabel(r.topic) + &#39; &amp;middot; &#39; + r.difficulty.toUpperCase() + &#39;&lt;/div&gt;&#39; +
+            &#39;&lt;div class=&#34;f-sub&#34;&gt;You: &#39; + r.myScore + &#39; &amp;middot; Them: &#39; + r.theirScore + &#39;&lt;/div&gt;&lt;/div&gt;&#39;;
+          list.appendChild(card);
+        });
+      }
+    }
+
+    // ---------- Send Challenge Modal ----------
+    function openChallengeModal(target) {
+      chModalTarget = target;
+      chModalTopic = &#34;&#34;; chModalDiff = &#34;&#34;; chModalMode = &#34;async&#34;;
+      document.getElementById(&#34;challengeModalTitle&#34;).textContent = &#34;Challenge &#34; + target;
+      document.getElementById(&#34;chModalError&#34;).textContent = &#34;&#34;;
+
+      // Build topic grid
+      var topics = [
+        [&#34;addition&#34;,&#34;\u2795&#34;,&#34;Add&#34;],[&#34;subtraction&#34;,&#34;\u2796&#34;,&#34;Sub&#34;],[&#34;multiplication&#34;,&#34;\u2716&#34;,&#34;Mul&#34;],
+        [&#34;division&#34;,&#34;\u2797&#34;,&#34;Div&#34;],[&#34;mixed&#34;,&#34;\ud83c\udfb2&#34;,&#34;Mix&#34;],[&#34;decimals&#34;,&#34;\ud83d\udd37&#34;,&#34;Dec&#34;],
+        [&#34;algebra&#34;,&#34;\ud83d\udd2c&#34;,&#34;Alg&#34;],[&#34;fractions&#34;,&#34;\ud83c\udf70&#34;,&#34;Frac&#34;],
+        [&#34;squares&#34;,&#34;\u00b2&#34;,&#34;Sq&#34;],[&#34;percentage&#34;,&#34;%&#34;,&#34;Pct&#34;]
+      ];
+      var grid = document.getElementById(&#34;chTopicGrid&#34;);
+      grid.innerHTML = &#34;&#34;;
+      topics.forEach(function(t) {
+        var b = document.createElement(&#34;button&#34;);
+        b.className = &#34;topic-btn&#34;;
+        b.innerHTML = &#39;&lt;span class=&#34;topic-emoji&#34;&gt;&#39; + t[1] + &#39;&lt;/span&gt;&lt;span class=&#34;topic-name&#34;&gt;&#39; + t[2] + &#39;&lt;/span&gt;&#39;;
+        b.onclick = function() { pickChTopic(t[0], b); };
+        grid.appendChild(b);
+      });
+
+      // Reset diff/mode selection UI
+      var dbs = document.querySelectorAll(&#34;#challengeModal .diff-btn&#34;);
+      for (var i = 0; i &lt; dbs.length; i++) dbs[i].classList.remove(&#34;selected&#34;);
+      var mbs = document.querySelectorAll(&#34;#challengeModal .mode-btn&#34;);
+      for (var j = 0; j &lt; mbs.length; j++) mbs[j].classList.remove(&#34;selected&#34;);
+      mbs[0].classList.add(&#34;selected&#34;);
+
+      document.getElementById(&#34;challengeModal&#34;).classList.add(&#34;show&#34;);
+    }
+
+    function closeChallengeModal() {
+      document.getElementById(&#34;challengeModal&#34;).classList.remove(&#34;show&#34;);
+    }
+
+    function pickChTopic(t, btn) {
+      chModalTopic = t;
+      var bs = document.querySelectorAll(&#34;#chTopicGrid .topic-btn&#34;);
+      for (var i = 0; i &lt; bs.length; i++) bs[i].classList.remove(&#34;selected&#34;);
+      btn.classList.add(&#34;selected&#34;);
+    }
+    function pickChDiff(d, btn) {
+      chModalDiff = d;
+      var bs = document.querySelectorAll(&#34;#challengeModal .diff-btn&#34;);
+      for (var i = 0; i &lt; bs.length; i++) bs[i].classList.remove(&#34;selected&#34;);
+      btn.classList.add(&#34;selected&#34;);
+    }
+    function pickChMode(m, btn) {
+      chModalMode = m;
+      var bs = document.querySelectorAll(&#34;#challengeModal .mode-btn&#34;);
+      for (var i = 0; i &lt; bs.length; i++) bs[i].classList.remove(&#34;selected&#34;);
+      btn.classList.add(&#34;selected&#34;);
+    }
+
+    async function sendChallenge() {
+      var err = document.getElementById(&#34;chModalError&#34;);
+      err.textContent = &#34;&#34;;
+      if (!chModalTopic) { err.textContent = &#34;Pick a topic.&#34;; return; }
+      if (!chModalDiff) { err.textContent = &#34;Pick a difficulty.&#34;; return; }
+
+      var id = &#34;c_&#34; + Date.now() + &#34;_&#34; + Math.floor(Math.random() * 1e6);
+      var seed = Math.floor(Math.random() * 1e9);
+      var ch = {
+        id: id, from: currentUser, to: chModalTarget,
+        topic: chModalTopic, difficulty: chModalDiff, mode: chModalMode,
+        seed: seed, status: &#34;pending&#34;, when: Date.now()
+      };
+
+      if (chModalMode === &#34;live&#34;) {
+        var matchId = &#34;m_&#34; + Date.now() + &#34;_&#34; + Math.floor(Math.random() * 1e6);
+        ch.matchId = matchId;
+        await fbPut(&#34;/liveMatches/&#34; + matchId, {
+          id: matchId, seed: seed, topic: chModalTopic, difficulty: chModalDiff,
+          players: { p1: currentUser, p2: chModalTarget },
+          scores: { p1: 0, p2: 0 },
+          ready: { p1: true, p2: false },
+          currentQ: 0, questionWinners: {}, status: &#34;waiting&#34;,
+          createdAt: Date.now()
+        });
+      } else {
+        await fbPut(&#34;/asyncChallenges/&#34; + id, {
+          id: id, seed: seed, topic: chModalTopic, difficulty: chModalDiff,
+          from: currentUser, to: chModalTarget,
+          fromScore: null, toScore: null, when: Date.now()
+        });
+      }
+
+      await fbPut(&#34;/users/&#34; + chModalTarget + &#34;/challenges/&#34; + id, ch);
+      await fbPut(&#34;/users/&#34; + currentUser + &#34;/sentChallenges/&#34; + id, ch);
+
+      closeChallengeModal();
+      if (chModalMode === &#34;live&#34;) {
+        enterLiveLobby(ch.matchId, true);
+      } else {
+        alert(&#34;Challenge sent to &#34; + chModalTarget + &#34;!&#34;);
+      }
+    }
+
+    async function declineChallenge(id) {
+      var me = await fbGet(&#34;/users/&#34; + currentUser) || {};
+      var ch = (me.challenges || {})[id];
+      if (!ch) return;
+      await fbDelete(&#34;/users/&#34; + currentUser + &#34;/challenges/&#34; + id);
+      await fbPatch(&#34;/users/&#34; + ch.from + &#34;/sentChallenges/&#34; + id, { status: &#34;declined&#34; });
+      refreshInbox(); renderChallenges();
+    }
+
+    async function acceptChallenge(id) {
+      var me = await fbGet(&#34;/users/&#34; + currentUser) || {};
+      var ch = (me.challenges || {})[id];
+      if (!ch) return;
+      if (ch.mode === &#34;live&#34;) {
+        await fbPut(&#34;/liveMatches/&#34; + ch.matchId + &#34;/ready/p2&#34;, true);
+        await fbDelete(&#34;/users/&#34; + currentUser + &#34;/challenges/&#34; + id);
+        enterLiveLobby(ch.matchId, false);
+      } else {
+        await fbDelete(&#34;/users/&#34; + currentUser + &#34;/challenges/&#34; + id);
+        startAsyncChallenge(ch);
+      }
+      refreshInbox();
+    }
+
+    // =====================
+    // ASYNC CHALLENGE PLAY
+    // =====================
+    var asyncCtx = null; // { challengeId, seed, topic, difficulty, opponent, asOriginator }
+
+    function startAsyncChallenge(ch) {
+      asyncCtx = {
+        id: ch.id, seed: ch.seed, topic: ch.topic, difficulty: ch.difficulty,
+        opponent: ch.from === currentUser ? ch.to : ch.from,
+        asOriginator: (ch.from === currentUser)
+      };
+      topic = ch.topic; difficulty = ch.difficulty; playerName = currentUser;
+      score = 0; lives = 3; questionCount = 0; correctCount = 0; wrongCount = 0;
+      skippedCount = 0; streak = 0; bestStreak = 0; timeLeft = 60;
+      level = 1; xp = 0; xpForNext = getXpNeeded(1);
+
+      document.getElementById(&#34;displayName&#34;).innerHTML = &#34;&amp;#9876; vs &#34; + asyncCtx.opponent;
+      document.getElementById(&#34;topicTag&#34;).textContent = topicLabel(topic);
+      document.getElementById(&#34;timerDisplay&#34;).style.color = &#34;#cba6f7&#34;;
+      updateScore(); updateLives(); updateStreak(); updateLevel();
+      showScreen(&#34;gameScreen&#34;);
+      soundStart();
+      newQuestion();
+      startTimer();
+    }
+
+    async function finishAsyncChallenge() {
+      if (!asyncCtx) return;
+      var id = asyncCtx.id;
+      var key = asyncCtx.asOriginator ? &#34;fromScore&#34; : &#34;toScore&#34;;
+      await fbPatch(&#34;/asyncChallenges/&#34; + id, (function(){ var o = {}; o[key] = score; return o; })());
+      var rec = await fbGet(&#34;/asyncChallenges/&#34; + id);
+      if (rec &amp;&amp; rec.fromScore != null &amp;&amp; rec.toScore != null) {
+        var winner = rec.fromScore === rec.toScore ? &#34;tie&#34; : (rec.fromScore &gt; rec.toScore ? rec.from : rec.to);
+        var summaryA = { opponent: rec.to, topic: rec.topic, difficulty: rec.difficulty,
+          myScore: rec.fromScore, theirScore: rec.toScore, winner: winner, when: Date.now() };
+        var summaryB = { opponent: rec.from, topic: rec.topic, difficulty: rec.difficulty,
+          myScore: rec.toScore, theirScore: rec.fromScore, winner: winner, when: Date.now() };
+        await fbPut(&#34;/users/&#34; + rec.from + &#34;/challengeResults/&#34; + id, summaryA);
+        await fbPut(&#34;/users/&#34; + rec.to + &#34;/challengeResults/&#34; + id, summaryB);
+        await fbDelete(&#34;/users/&#34; + rec.to + &#34;/challenges/&#34; + id);
+        await fbPatch(&#34;/users/&#34; + rec.from + &#34;/sentChallenges/&#34; + id, { status: &#34;done&#34; });
+        await fbPatch(&#34;/users/&#34; + rec.to + &#34;/sentChallenges/&#34; + id, { status: &#34;done&#34; });
+      } else {
+        // First player — mark status played but keep challenge open
+        await fbPatch(&#34;/users/&#34; + (asyncCtx.asOriginator ? asyncCtx.opponent : currentUser) + &#34;/challenges/&#34; + id, { status: &#34;pending&#34; });
+      }
+      asyncCtx = null;
+    }
+
+    // =====================
+    // LIVE MATCH
+    // =====================
+    var liveCtx = null;
+    var livePollTimer = null;
+    var liveQuestions = null;
+    var liveCurrentIdx = 0;
+    var liveLockAnswer = false;
+
+    // Seeded PRNG — identical for both players
+    function makeRng(seed) {
+      var s = seed &gt;&gt;&gt; 0;
+      return function() {
+        s = (s * 1664525 + 1013904223) &gt;&gt;&gt; 0;
+        return s / 0x100000000;
+      };
+    }
+    function rngInt(rng, min, max) { return Math.floor(rng() * (max - min + 1)) + min; }
+
+    function buildSeededQuestions(topic, difficulty, seed, count) {
+      var rng = makeRng(seed);
+      var qs = [];
+      for (var i = 0; i &lt; count; i++) {
+        qs.push(buildOneSeededQuestion(topic, difficulty, rng, i));
+      }
+      return qs;
+    }
+
+    function buildOneSeededQuestion(topic, difficulty, rng, idx) {
+      var maxNum = difficulty === &#34;easy&#34; ? 10 : difficulty === &#34;medium&#34; ? 25 : 50;
+      var mulMax = difficulty === &#34;easy&#34; ? 10 : difficulty === &#34;medium&#34; ? 12 : 15;
+      var num1, num2, ans, text, hint = &#34;&#34;;
+      var eff = topic;
+      if (topic === &#34;mixed&#34;) {
+        var ops = [&#34;addition&#34;,&#34;subtraction&#34;,&#34;multiplication&#34;,&#34;division&#34;];
+        eff = ops[rngInt(rng, 0, 3)];
+      }
+      if (eff === &#34;addition&#34;) {
+        num1 = rngInt(rng, 1, maxNum); num2 = rngInt(rng, 1, maxNum); ans = num1 + num2;
+        text = num1 + &#34; + &#34; + num2 + &#34; = ?&#34;;
+      } else if (eff === &#34;subtraction&#34;) {
+        num1 = rngInt(rng, 1, maxNum); num2 = rngInt(rng, 1, num1); ans = num1 - num2;
+        text = num1 + &#34; - &#34; + num2 + &#34; = ?&#34;;
+      } else if (eff === &#34;multiplication&#34;) {
+        num1 = rngInt(rng, 1, mulMax); num2 = rngInt(rng, 1, mulMax); ans = num1 * num2;
+        text = num1 + &#34; \u00d7 &#34; + num2 + &#34; = ?&#34;;
+      } else if (eff === &#34;division&#34;) {
+        num2 = rngInt(rng, 1, mulMax); ans = rngInt(rng, 1, mulMax); num1 = num2 * ans;
+        text = num1 + &#34; \u00f7 &#34; + num2 + &#34; = ?&#34;;
+      } else if (topic === &#34;squares&#34;) {
+        num1 = rngInt(rng, 1, difficulty === &#34;easy&#34; ? 12 : difficulty === &#34;medium&#34; ? 18 : 25);
+        ans = num1 * num1;
+        text = num1 + &#34;\u00b2 = ?&#34;;
+        hint = num1 + &#34; \u00d7 &#34; + num1;
+      } else if (topic === &#34;percentage&#34;) {
+        var pcts = difficulty === &#34;easy&#34; ? [10,25,50] : difficulty === &#34;medium&#34; ? [10,20,25,50,75] : [10,20,25,30,40,50,60,75,80];
+        var p = pcts[rngInt(rng, 0, pcts.length - 1)];
+        num1 = rngInt(rng, 2, 10) * 20;
+        ans = (p / 100) * num1;
+        text = p + &#34;% of &#34; + num1 + &#34; = ?&#34;;
+      } else if (topic === &#34;algebra&#34;) {
+        ans = rngInt(rng, 1, maxNum);
+        num2 = rngInt(rng, 1, maxNum);
+        text = &#34;x + &#34; + num2 + &#34; = &#34; + (ans + num2);
+        hint = &#34;Find x!&#34;;
+      } else if (topic === &#34;decimals&#34;) {
+        num1 = rngInt(rng, 10, 99) / 10;
+        num2 = rngInt(rng, 10, 99) / 10;
+        ans = parseFloat((num1 + num2).toFixed(1));
+        text = num1 + &#34; + &#34; + num2 + &#34; = ?&#34;;
+        hint = &#34;Answer with decimals&#34;;
+      } else if (topic === &#34;fractions&#34;) {
+        var denoms = [2,4]; var d = denoms[rngInt(rng,0,1)]; var n = rngInt(rng, 1, d - 1);
+        var whole = rngInt(rng, 1, 5);
+        ans = parseFloat((whole + n / d).toFixed(2));
+        text = whole + &#34; + &#34; + n + &#34;/&#34; + d + &#34; = ?&#34;;
+        hint = &#34;Answer as decimal&#34;;
+      } else {
+        num1 = rngInt(rng, 1, maxNum); num2 = rngInt(rng, 1, maxNum); ans = num1 + num2;
+        text = num1 + &#34; + &#34; + num2 + &#34; = ?&#34;;
+      }
+      return { text: text, answer: ans, hint: hint };
+    }
+
+    async function enterLiveLobby(matchId, asP1) {
+      liveCtx = { matchId: matchId, asP1: asP1 };
+      showScreen(&#34;liveLobbyScreen&#34;);
+      document.getElementById(&#34;lobbyStatus&#34;).textContent = asP1 ? &#34;Waiting for opponent to accept...&#34; : &#34;Getting ready...&#34;;
+      document.getElementById(&#34;lobbyInfo&#34;).innerHTML = &#34;&#34;;
+      pollLobby();
+    }
+
+    async function pollLobby() {
+      stopLivePoll();
+      livePollTimer = setInterval(async function() {
+        if (!liveCtx) return;
+        var m = await fbGet(&#34;/liveMatches/&#34; + liveCtx.matchId);
+        if (!m) { stopLivePoll(); alert(&#34;Match cancelled.&#34;); goToStart(); return; }
+        var info = document.getElementById(&#34;lobbyInfo&#34;);
+        info.innerHTML =
+          &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;You&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + (liveCtx.asP1 ? m.players.p1 : m.players.p2) + &#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+          &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;Opponent&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + (liveCtx.asP1 ? m.players.p2 : m.players.p1) + &#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+          &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;Topic&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + topicLabel(m.topic) + &#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+          &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;Difficulty&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + m.difficulty.toUpperCase() + &#39;&lt;/span&gt;&lt;/div&gt;&#39;;
+        if (m.ready &amp;&amp; m.ready.p1 &amp;&amp; m.ready.p2 &amp;&amp; m.status === &#34;waiting&#34;) {
+          await fbPatch(&#34;/liveMatches/&#34; + liveCtx.matchId, { status: &#34;playing&#34;, startedAt: Date.now() });
+        }
+        if (m.status === &#34;playing&#34;) {
+          stopLivePoll();
+          startLiveMatch(m);
+        } else if (m.status === &#34;done&#34;) {
+          stopLivePoll();
+          finishLiveMatch(m);
+        }
+      }, 800);
+    }
+
+    function stopLivePoll() { if (livePollTimer) { clearInterval(livePollTimer); livePollTimer = null; } }
+
+    function startLiveMatch(m) {
+      liveQuestions = buildSeededQuestions(m.topic, m.difficulty, m.seed, 10);
+      liveCurrentIdx = m.currentQ || 0;
+      liveLockAnswer = false;
+      var meName = liveCtx.asP1 ? m.players.p1 : m.players.p2;
+      var oppName = liveCtx.asP1 ? m.players.p2 : m.players.p1;
+      document.getElementById(&#34;liveMeName&#34;).textContent = meName + &#34; (you)&#34;;
+      document.getElementById(&#34;liveOppName&#34;).textContent = oppName;
+      document.getElementById(&#34;liveMeScore&#34;).textContent = liveCtx.asP1 ? (m.scores.p1 || 0) : (m.scores.p2 || 0);
+      document.getElementById(&#34;liveOppScore&#34;).textContent = liveCtx.asP1 ? (m.scores.p2 || 0) : (m.scores.p1 || 0);
+      document.getElementById(&#34;liveFeedback&#34;).textContent = &#34;&#34;;
+      document.getElementById(&#34;liveAnswerInput&#34;).value = &#34;&#34;;
+      showLiveQuestion();
+      showScreen(&#34;liveMatchScreen&#34;);
+      startLivePlayPoll();
+    }
+
+    function showLiveQuestion() {
+      if (liveCurrentIdx &gt;= 10) return;
+      var q = liveQuestions[liveCurrentIdx];
+      document.getElementById(&#34;liveQuestion&#34;).textContent = q.text;
+      document.getElementById(&#34;liveHint&#34;).textContent = q.hint || &#34;&#34;;
+      document.getElementById(&#34;liveRound&#34;).textContent = (liveCurrentIdx + 1) + &#34; / 10&#34;;
+      document.getElementById(&#34;liveAnswerInput&#34;).value = &#34;&#34;;
+      document.getElementById(&#34;liveFeedback&#34;).textContent = &#34;&#34;;
+      liveLockAnswer = false;
+    }
+
+    function liveTapNum(n) { var i = document.getElementById(&#34;liveAnswerInput&#34;); i.value += n; soundClick(); }
+    function liveTapDel() { var i = document.getElementById(&#34;liveAnswerInput&#34;); i.value = i.value.slice(0, -1); soundClick(); }
+
+    async function checkLiveAnswer() {
+      if (liveLockAnswer) return;
+      if (!liveCtx || !liveQuestions) return;
+      var guess = document.getElementById(&#34;liveAnswerInput&#34;).value.trim();
+      if (guess === &#34;&#34;) return;
+      var q = liveQuestions[liveCurrentIdx];
+      var correct = parseFloat(guess) === q.answer;
+      if (!correct) {
+        document.getElementById(&#34;liveFeedback&#34;).innerHTML = &#34;&amp;#128533; Nope — keep trying!&#34;;
+        document.getElementById(&#34;liveFeedback&#34;).style.color = &#34;#f38ba8&#34;;
+        document.getElementById(&#34;liveAnswerInput&#34;).value = &#34;&#34;;
+        soundWrong();
+        return;
+      }
+      liveLockAnswer = true;
+      var claimPath = &#34;/liveMatches/&#34; + liveCtx.matchId + &#34;/questionWinners/q&#34; + liveCurrentIdx;
+      var current = await fbGet(claimPath);
+      if (current) {
+        document.getElementById(&#34;liveFeedback&#34;).innerHTML = &#34;&amp;#9201; Too slow! &#34; + current + &#34; got it!&#34;;
+        document.getElementById(&#34;liveFeedback&#34;).style.color = &#34;#f9e64f&#34;;
+        soundSkip();
+        return;
+      }
+      await fbPut(claimPath, currentUser);
+      // Re-read to see who actually got last-write
+      var actualWinner = await fbGet(claimPath);
+      if (actualWinner === currentUser) {
+        document.getElementById(&#34;liveFeedback&#34;).innerHTML = &#34;&amp;#127881; You got it!&#34;;
+        document.getElementById(&#34;liveFeedback&#34;).style.color = &#34;#a6e3a1&#34;;
+        soundCorrect();
+      } else {
+        document.getElementById(&#34;liveFeedback&#34;).innerHTML = &#34;&amp;#9201; Too slow! &#34; + actualWinner + &#34; got it!&#34;;
+        document.getElementById(&#34;liveFeedback&#34;).style.color = &#34;#f9e64f&#34;;
+        soundSkip();
+      }
+      await fbPatch(&#34;/liveMatches/&#34; + liveCtx.matchId, { currentQ: liveCurrentIdx + 1 });
+    }
+
+    function computeScoresFromWinners(m) {
+      var winners = m.questionWinners || {};
+      var p1n = m.players.p1, p2n = m.players.p2;
+      var s1 = 0, s2 = 0;
+      for (var k in winners) {
+        if (winners[k] === p1n) s1++;
+        else if (winners[k] === p2n) s2++;
+      }
+      return { p1: s1, p2: s2 };
+    }
+
+    function startLivePlayPoll() {
+      stopLivePoll();
+      livePollTimer = setInterval(async function() {
+        if (!liveCtx) { stopLivePoll(); return; }
+        var m = await fbGet(&#34;/liveMatches/&#34; + liveCtx.matchId);
+        if (!m) { stopLivePoll(); return; }
+        var sc = computeScoresFromWinners(m);
+        document.getElementById(&#34;liveMeScore&#34;).textContent = liveCtx.asP1 ? sc.p1 : sc.p2;
+        document.getElementById(&#34;liveOppScore&#34;).textContent = liveCtx.asP1 ? sc.p2 : sc.p1;
+        // Advance question when claim appears for current question
+        var winner = (m.questionWinners || {})[&#34;q&#34; + liveCurrentIdx];
+        if (winner) {
+          if (winner !== currentUser &amp;&amp; !liveLockAnswer) {
+            document.getElementById(&#34;liveFeedback&#34;).innerHTML = &#34;&amp;#9201; &#34; + winner + &#34; got it first!&#34;;
+            document.getElementById(&#34;liveFeedback&#34;).style.color = &#34;#f9e64f&#34;;
+            liveLockAnswer = true;
+            soundSkip();
+          }
+          setTimeout(function() {
+            liveCurrentIdx = liveCurrentIdx + 1;
+            if (liveCurrentIdx &gt;= 10) {
+              fbPatch(&#34;/liveMatches/&#34; + liveCtx.matchId, { status: &#34;done&#34; });
+            } else if (m.status !== &#34;done&#34;) {
+              showLiveQuestion();
+            }
+          }, 1300);
+          // Prevent repeated advance: bump local idx optimistically after scheduling
+          liveLockAnswer = true;
+        }
+        if (m.status === &#34;done&#34;) {
+          stopLivePoll();
+          finishLiveMatch(m);
+        }
+      }, 700);
+    }
+
+    async function finishLiveMatch(m) {
+      stopLivePoll();
+      var meKey = liveCtx.asP1 ? &#34;p1&#34; : &#34;p2&#34;;
+      var oppKey = liveCtx.asP1 ? &#34;p2&#34; : &#34;p1&#34;;
+      var meScore = m.scores[meKey] || 0;
+      var oppScore = m.scores[oppKey] || 0;
+      var oppName = m.players[oppKey];
+      var winner = meScore === oppScore ? &#34;tie&#34; : (meScore &gt; oppScore ? currentUser : oppName);
+      // Save result summary for me
+      var resultId = m.id;
+      var summary = { opponent: oppName, topic: m.topic, difficulty: m.difficulty,
+        myScore: meScore, theirScore: oppScore, winner: winner, when: Date.now(), live: true };
+      await fbPut(&#34;/users/&#34; + currentUser + &#34;/challengeResults/&#34; + resultId, summary);
+
+      // Show end screen with result
+      showScreen(&#34;endScreen&#34;);
+      var title = winner === &#34;tie&#34; ? &#34;It&#39;s a Tie!&#34; : (winner === currentUser ? &#34;YOU WIN!&#34; : oppName + &#34; Wins&#34;);
+      var emoji = winner === currentUser ? &#34;&amp;#127942;&#34; : winner === &#34;tie&#34; ? &#34;&amp;#129309;&#34; : &#34;&amp;#128531;&#34;;
+      document.getElementById(&#34;endEmoji&#34;).innerHTML = emoji;
+      document.getElementById(&#34;endTitle&#34;).textContent = title;
+      document.getElementById(&#34;gradeBox&#34;).innerHTML =
+        &#39;&lt;span style=&#34;color:#a6e3a1;font-size:50px;&#34;&gt;&#39; + meScore + &#39;&lt;/span&gt;&#39; +
+        &#39;&lt;span style=&#34;color:#888;font-size:30px;&#34;&gt; vs &lt;/span&gt;&#39; +
+        &#39;&lt;span style=&#34;color:#f38ba8;font-size:50px;&#34;&gt;&#39; + oppScore + &#39;&lt;/span&gt;&#39;;
+      document.getElementById(&#34;statsBox&#34;).innerHTML =
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#9889; Mode&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;Live Race&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#128100; Opponent&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + oppName + &#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#128218; Topic&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + topicLabel(m.topic) + &#39;&lt;/span&gt;&lt;/div&gt;&#39; +
+        &#39;&lt;div class=&#34;stat-row&#34;&gt;&lt;span class=&#34;stat-label&#34;&gt;&amp;#127942; Difficulty&lt;/span&gt;&lt;span class=&#34;stat-value&#34;&gt;&#39; + m.difficulty.toUpperCase() + &#39;&lt;/span&gt;&lt;/div&gt;&#39;;
+      soundGameOver();
+      liveCtx = null; liveQuestions = null;
+    }
+
+    async function cancelLiveMatch() {
+      if (liveCtx) {
+        await fbPatch(&#34;/liveMatches/&#34; + liveCtx.matchId, { status: &#34;done&#34; });
+        liveCtx = null;
+      }
+      stopLivePoll();
+      goToStart();
+    }
+
+    // Enter keys
+    document.getElementById(&#34;answerInput&#34;).addEventListener(&#34;keydown&#34;, function(e) { if (e.key === &#34;Enter&#34;) checkAnswer(); });
+    document.getElementById(&#34;authPassword&#34;).addEventListener(&#34;keydown&#34;, function(e) { if (e.key === &#34;Enter&#34;) doLogin(); });
+    document.getElementById(&#34;liveAnswerInput&#34;).addEventListener(&#34;keydown&#34;, function(e) { if (e.key === &#34;Enter&#34;) checkLiveAnswer(); });
+
+    // Make sure correct screen shows when page loads
+    window.onload = async function() {
+      var restored = await tryRestoreSession();
+      if (restored) { enterApp(); }
+      else { showScreen(&#34;authScreen&#34;); }
+      syncFromCloud();
+
+      // Register service worker for offline play
+      if (&#34;serviceWorker&#34; in navigator) {
+        navigator.serviceWorker.register(&#34;/sw.js&#34;).catch(function(){});
+      }
+    };
+    </script>
+  </body>
+</html>
